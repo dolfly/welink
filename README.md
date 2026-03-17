@@ -122,7 +122,7 @@ cd welink
 docker compose -f docker-compose.demo.yml up
 ```
 
-访问 [localhost:3001](http://localhost:3001) 即可看到预置了 12 个好友、3 个群聊和数千条模拟消息的完整界面。
+访问 [localhost:3000](http://localhost:3000) 即可看到预置了 12 个好友、3 个群聊和数千条模拟消息的完整界面。
 
 > Demo 模式下后端会在容器内自动生成仿真数据库，无需挂载任何本地目录。所有数据均为随机生成，不涉及真实聊天记录。
 
@@ -169,7 +169,7 @@ docker compose up
 
 首次启动会自动拉取 GitHub CI 构建好的镜像，无需本地编译。如需强制本地构建，加上 `--build` 参数。
 
-访问 [localhost:3001](http://localhost:3001) 开始分析。
+访问 [localhost:3000](http://localhost:3000) 开始分析。
 
 ## 配置
 
