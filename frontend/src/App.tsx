@@ -28,17 +28,21 @@ import { ContactModal } from './components/contact/ContactModal';
 import { InitializingScreen } from './components/common/InitializingScreen';
 import { WelcomePage } from './components/common/WelcomePage';
 
+// Privacy Components
+import { PrivacyView } from './components/privacy/PrivacyView';
+
 // Hooks
 import { useContacts } from './hooks/useContacts';
 import { useGlobalStats } from './hooks/useGlobalStats';
 import { useBackendStatus } from './hooks/useBackendStatus';
+import { usePrivacySettings } from './hooks/usePrivacySettings';
 
 // Types
 import type { TabType, ContactStats, HealthStatus, TimeRange, GroupInfo } from './types';
 
 // Utils
 import { formatCompactNumber } from './utils/formatters';
-import { globalApi } from './services/api';
+import { globalApi, groupsApi } from './services/api';
 
 const ALL_TIME: TimeRange = { from: null, to: null, label: '全部' };
 
@@ -64,11 +68,55 @@ function App() {
   // Backend Status Hook
   const { isInitialized, isIndexing, backendReady, startPolling } = useBackendStatus(1000);
 
+  // Privacy settings
+  const {
+    blockedUsers,
+    blockedGroups,
+    addBlockedUser,
+    removeBlockedUser,
+    addBlockedGroup,
+    removeBlockedGroup,
+  } = usePrivacySettings();
+
   // Data Hooks (只在初始化完成后启动)
   const { contacts: allContacts, loading: contactsLoading } = useContacts(isInitialized, 15000);
-  const { stats: globalStats } = useGlobalStats(isInitialized, 15000);
+  const { stats: rawGlobalStats } = useGlobalStats(isInitialized, 15000);
+  const [allGroups, setAllGroups] = useState<GroupInfo[]>([]);
+  useEffect(() => {
+    if (isInitialized) groupsApi.getList().then((d) => setAllGroups(d || [])).catch(() => {});
+  }, [isInitialized]);
   const statsLoading = contactsLoading;
-  const contacts = allContacts;
+
+  // 屏蔽过滤后的联系人列表
+  const contacts = useMemo(() => {
+    if (blockedUsers.length === 0) return allContacts;
+    return allContacts.filter(
+      (c) => !blockedUsers.some(
+        (b) => b === c.username || b === c.nickname || b === c.remark
+      )
+    );
+  }, [allContacts, blockedUsers]);
+
+  // 被屏蔽联系人的显示名集合（用于过滤深夜排行，排行只有 name 无 username）
+  const blockedDisplayNames = useMemo(() => {
+    if (blockedUsers.length === 0) return new Set<string>();
+    return new Set(
+      allContacts
+        .filter((c) => blockedUsers.some((b) => b === c.username || b === c.nickname || b === c.remark))
+        .map((c) => c.remark || c.nickname || c.username)
+    );
+  }, [allContacts, blockedUsers]);
+
+  // 屏蔽过滤后的全局统计（深夜排行中过滤被屏蔽联系人）
+  const globalStats = useMemo(() => {
+    if (!rawGlobalStats || blockedDisplayNames.size === 0) return rawGlobalStats;
+    return {
+      ...rawGlobalStats,
+      late_night_ranking: rawGlobalStats.late_night_ranking.filter(
+        (e) => !blockedDisplayNames.has(e.name)
+      ),
+    };
+  }, [rawGlobalStats, blockedDisplayNames]);
 
   // Computed Values
   const filteredContacts = useMemo(() => {
@@ -271,7 +319,18 @@ function App() {
             </div>
           </div>
         ) : activeTab === 'groups' ? (
-          <GroupsView allContacts={allContacts} onContactClick={handleContactClick} />
+          <GroupsView allContacts={allContacts} onContactClick={handleContactClick} blockedGroups={blockedGroups} onBlockGroup={addBlockedGroup} />
+        ) : activeTab === 'privacy' ? (
+          <PrivacyView
+            blockedUsers={blockedUsers}
+            blockedGroups={blockedGroups}
+            onAddBlockedUser={addBlockedUser}
+            onRemoveBlockedUser={removeBlockedUser}
+            onAddBlockedGroup={addBlockedGroup}
+            onRemoveBlockedGroup={removeBlockedGroup}
+            allContacts={allContacts}
+            allGroups={allGroups}
+          />
         ) : (
           <div>
             <Header title="Database" subtitle="数据库管理" />
@@ -285,6 +344,7 @@ function App() {
         contact={selectedContact}
         onClose={handleCloseModal}
         onGroupClick={(g) => { setSelectedContact(null); setSelectedGroup(g); }}
+        onBlock={(username) => { addBlockedUser(username); }}
       />
 
       {/* Group Detail Modal (triggered from contact modal) */}
@@ -294,6 +354,7 @@ function App() {
           onClose={() => setSelectedGroup(null)}
           allContacts={allContacts}
           onContactClick={(c) => { setSelectedGroup(null); setSelectedContact(c); }}
+          onBlock={(username) => { addBlockedGroup(username); }}
         />
       )}
     </div>

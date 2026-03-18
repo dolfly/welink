@@ -93,7 +93,7 @@ export interface BackendStatus {
   total_cached: number;
 }
 
-export type TabType = 'dashboard' | 'db' | 'groups';
+export type TabType = 'dashboard' | 'db' | 'groups' | 'privacy';
 
 export interface GroupInfo {
   username: string;

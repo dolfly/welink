@@ -3,7 +3,7 @@
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { X, Users } from 'lucide-react';
+import { X, Users, EyeOff } from 'lucide-react';
 import type { ContactStats, ContactDetail, SentimentResult, GroupInfo } from '../../types';
 import { WordCloudCanvas } from './WordCloudCanvas';
 import { ContactDetailCharts } from './ContactDetailCharts';
@@ -15,11 +15,12 @@ interface ContactModalProps {
   contact: ContactStats | null;
   onClose: () => void;
   onGroupClick?: (group: GroupInfo) => void;
+  onBlock?: (username: string) => void;
 }
 
 type ModalTab = 'wordcloud' | 'detail' | 'sentiment';
 
-export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, onGroupClick }) => {
+export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, onGroupClick, onBlock }) => {
   const { data: wordData, loading: isAnalysing, fetch: fetchWordCloud } = useWordCloud();
   const [tab, setTab] = useState<ModalTab>('wordcloud');
   const [detail, setDetail] = useState<ContactDetail | null>(null);
@@ -89,13 +90,24 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
         className="dk-card bg-white rounded-t-[32px] sm:rounded-[48px] w-full sm:max-w-5xl overflow-y-auto max-h-[92vh] shadow-2xl relative p-6 sm:p-16 animate-in slide-in-from-bottom sm:zoom-in duration-300"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-5 right-5 sm:top-10 sm:right-10 text-gray-300 hover:text-gray-900 transition-colors duration-200"
-        >
-          <X size={28} strokeWidth={2} />
-        </button>
+        {/* Top-right actions */}
+        <div className="absolute top-5 right-5 sm:top-10 sm:right-10 flex items-center gap-2">
+          {onBlock && (
+            <button
+              onClick={() => { onBlock(contact.username); onClose(); }}
+              className="p-2 rounded-xl text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors duration-200"
+              title="屏蔽该联系人"
+            >
+              <EyeOff size={20} strokeWidth={2} />
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="text-gray-300 hover:text-gray-900 transition-colors duration-200"
+          >
+            <X size={28} strokeWidth={2} />
+          </button>
+        </div>
 
         {/* Header */}
         <div className="mb-6 sm:mb-8 pr-10 sm:pr-0 flex items-center gap-4">

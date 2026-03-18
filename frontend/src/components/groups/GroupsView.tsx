@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Users, MessageSquare, ChevronRight, Loader2, X, BarChart2 } from 'lucide-react';
+import { Users, MessageSquare, ChevronRight, Loader2, X, BarChart2, EyeOff } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import type { GroupInfo, GroupDetail, ContactStats } from '../../types';
 import { groupsApi } from '../../services/api';
@@ -22,9 +22,10 @@ interface GroupDetailModalProps {
   onClose: () => void;
   allContacts: ContactStats[];
   onContactClick: (c: ContactStats) => void;
+  onBlock?: (username: string) => void;
 }
 
-export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({ group, onClose, allContacts, onContactClick }) => {
+export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({ group, onClose, allContacts, onContactClick, onBlock }) => {
 
   // 根据显示名（remark/nickname）查找联系人
   const findContact = (displayName: string): ContactStats | null => {
@@ -67,9 +68,20 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({ group, onClo
         className="dk-card bg-white rounded-t-[32px] sm:rounded-[48px] w-full sm:max-w-4xl overflow-y-auto max-h-[92vh] shadow-2xl relative p-6 sm:p-12"
         onClick={(e) => e.stopPropagation()}
       >
-        <button onClick={onClose} className="absolute top-5 right-5 text-gray-300 hover:text-gray-700 dark:hover:text-gray-200">
-          <X size={28} strokeWidth={2} />
-        </button>
+        <div className="absolute top-5 right-5 flex items-center gap-2">
+          {onBlock && (
+            <button
+              onClick={() => { onBlock(group.username); onClose(); }}
+              className="p-2 rounded-xl text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors duration-200"
+              title="屏蔽该群聊"
+            >
+              <EyeOff size={20} strokeWidth={2} />
+            </button>
+          )}
+          <button onClick={onClose} className="text-gray-300 hover:text-gray-700 dark:hover:text-gray-200">
+            <X size={28} strokeWidth={2} />
+          </button>
+        </div>
 
         {/* Header */}
         <div className="flex items-center gap-4 mb-6 pr-10">
@@ -247,9 +259,11 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({ group, onClo
 interface GroupsViewProps {
   allContacts: ContactStats[];
   onContactClick: (c: ContactStats) => void;
+  blockedGroups?: string[];
+  onBlockGroup?: (username: string) => void;
 }
 
-export const GroupsView: React.FC<GroupsViewProps> = ({ allContacts, onContactClick }) => {
+export const GroupsView: React.FC<GroupsViewProps> = ({ allContacts, onContactClick, blockedGroups = [], onBlockGroup }) => {
   const [groups, setGroups] = useState<GroupInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -262,10 +276,11 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ allContacts, onContactCl
     }).catch(() => setLoading(false));
   }, []);
 
-  const filtered = groups.filter(g =>
-    g.name.toLowerCase().includes(search.toLowerCase()) ||
-    g.username.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = groups.filter(g => {
+    if (blockedGroups.some(b => b === g.username || b === g.name)) return false;
+    return g.name.toLowerCase().includes(search.toLowerCase()) ||
+      g.username.toLowerCase().includes(search.toLowerCase());
+  });
 
   if (loading) {
     return (
@@ -361,6 +376,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ allContacts, onContactCl
           onClose={() => setSelected(null)}
           allContacts={allContacts}
           onContactClick={(c) => { setSelected(null); onContactClick(c); }}
+          onBlock={onBlockGroup ? (u) => { onBlockGroup(u); setSelected(null); } : undefined}
         />
       )}
     </div>
