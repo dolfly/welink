@@ -176,6 +176,9 @@ export const groupsApi = {
 
   getDayMessages: (username: string, date: string) =>
     api.get<void, GroupChatMessage[]>('/groups/messages', { params: { username, date } }),
+
+  searchMessages: (username: string, q: string) =>
+    api.get<void, GroupChatMessage[]>('/groups/search', { params: { username, q } }),
 };
 
 export default api;

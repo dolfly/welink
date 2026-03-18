@@ -156,6 +156,7 @@ export interface GroupChatMessage {
   content: string;
   is_mine: boolean;
   type: number;
+  date?: string;    // "2024-03-15"，搜索结果中使用
 }
 
 // null means "all time"

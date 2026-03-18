@@ -1173,11 +1173,12 @@ func (s *ContactService) GetGroupDetail(username string) *GroupDetail {
 
 // GroupChatMessage 群聊单条消息（含发言者显示名）
 type GroupChatMessage struct {
-	Time    string `json:"time"`    // "HH:MM"
-	Speaker string `json:"speaker"` // 发言者显示名
-	Content string `json:"content"` // 消息内容
-	IsMine  bool   `json:"is_mine"` // 是否是我发的
-	Type    int    `json:"type"`    // local_type
+	Time    string `json:"time"`           // "HH:MM"
+	Speaker string `json:"speaker"`        // 发言者显示名
+	Content string `json:"content"`        // 消息内容
+	IsMine  bool   `json:"is_mine"`        // 是否是我发的
+	Type    int    `json:"type"`           // local_type
+	Date    string `json:"date,omitempty"` // "2024-03-15"，搜索结果中使用
 }
 
 // GetGroupDayMessages 返回群聊某一天的聊天记录
@@ -1302,6 +1303,105 @@ func (s *ContactService) GetGroupDayMessages(username, date string) []GroupChatM
 
 	if msgs == nil {
 		return []GroupChatMessage{}
+	}
+	return msgs
+}
+
+// SearchGroupMessages 在群聊消息中搜索关键词，只匹配文本消息，返回最多 200 条（按时间倒序）
+func (s *ContactService) SearchGroupMessages(username, query string) []GroupChatMessage {
+	if query == "" {
+		return []GroupChatMessage{}
+	}
+	tableName := db.GetTableName(username)
+	tw := s.timeWhere()
+
+	whereClause := tw
+	if whereClause == "" {
+		whereClause = " WHERE local_type=1"
+	} else {
+		whereClause += " AND local_type=1"
+	}
+
+	nameMap := s.loadContactNameMap()
+	lowerQuery := strings.ToLower(query)
+	var msgs []GroupChatMessage
+
+	for _, mdb := range s.dbMgr.MessageDBs {
+		id2name := make(map[int64]string)
+		n2iRows, err2 := mdb.Query("SELECT rowid, user_name FROM Name2Id")
+		if err2 == nil {
+			for n2iRows.Next() {
+				var rid int64
+				var uname string
+				n2iRows.Scan(&rid, &uname)
+				id2name[rid] = uname
+			}
+			n2iRows.Close()
+		}
+
+		rows, err := mdb.Query(fmt.Sprintf(
+			"SELECT create_time, message_content, COALESCE(WCDB_CT_message_content,0), COALESCE(real_sender_id,0) FROM [%s]%s ORDER BY create_time DESC",
+			tableName, whereClause,
+		))
+		if err != nil {
+			continue
+		}
+		for rows.Next() {
+			var ts int64
+			var rawContent []byte
+			var ct, senderID int64
+			rows.Scan(&ts, &rawContent, &ct, &senderID)
+
+			rawText := decodeGroupContent(rawContent, ct)
+			rawText = strings.TrimSpace(rawText)
+
+			speakerWxid := ""
+			content := rawText
+			if idx := strings.Index(rawText, ":\n"); idx > 0 && idx < 80 {
+				speakerWxid = rawText[:idx]
+				content = rawText[idx+2:]
+			}
+			if speakerWxid == "" {
+				if wxid, ok := id2name[senderID]; ok {
+					speakerWxid = wxid
+				}
+			}
+
+			content = strings.TrimSpace(content)
+			if content == "" {
+				continue
+			}
+			if !strings.Contains(strings.ToLower(content), lowerQuery) {
+				continue
+			}
+
+			speaker := speakerWxid
+			if n, ok := nameMap[speakerWxid]; ok && n != "" {
+				speaker = n
+			}
+			if speaker == "" {
+				speaker = "未知"
+			}
+
+			t := time.Unix(ts, 0).In(s.tz)
+			msgs = append(msgs, GroupChatMessage{
+				Time:    t.Format("15:04"),
+				Date:    t.Format("2006-01-02"),
+				Speaker: speaker,
+				Content: content,
+				IsMine:  false,
+				Type:    1,
+			})
+		}
+		rows.Close()
+	}
+
+	if msgs == nil {
+		return []GroupChatMessage{}
+	}
+	sort.Slice(msgs, func(i, j int) bool { return msgs[i].Date+msgs[i].Time > msgs[j].Date+msgs[j].Time })
+	if len(msgs) > 200 {
+		msgs = msgs[:200]
 	}
 	return msgs
 }

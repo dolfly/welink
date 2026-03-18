@@ -110,6 +110,17 @@ func main() {
 			c.JSON(http.StatusOK, contactSvc.GetGroupDayMessages(uname, date))
 		})
 
+		// 群聊搜索聊天记录
+		api.GET("/groups/search", func(c *gin.Context) {
+			uname := c.Query("username")
+			q := c.Query("q")
+			if uname == "" || q == "" {
+				c.JSON(400, gin.H{"error": "username and q required"})
+				return
+			}
+			c.JSON(http.StatusOK, contactSvc.SearchGroupMessages(uname, q))
+		})
+
 		// 群聊深度画像
 		api.GET("/groups/detail", func(c *gin.Context) {
 			uname := c.Query("username")
