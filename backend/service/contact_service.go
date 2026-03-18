@@ -69,10 +69,11 @@ type ContactDetail struct {
 
 type ContactStatsExtended struct {
 	model.ContactStats
-	FirstMsg string             `json:"first_msg"`
-	EmojiCnt int                `json:"emoji_count"`
-	TypePct  map[string]float64 `json:"type_pct"`
-	TypeCnt  map[string]int     `json:"type_cnt"`
+	FirstMsg         string             `json:"first_msg"`
+	EmojiCnt         int                `json:"emoji_count"`
+	TypePct          map[string]float64 `json:"type_pct"`
+	TypeCnt          map[string]int     `json:"type_cnt"`
+	SharedGroupsCount int               `json:"shared_groups_count"`
 }
 
 type ContactService struct {
@@ -349,6 +350,13 @@ func (s *ContactService) performAnalysis() {
 		}(i)
 	}
 	wg.Wait()
+
+	// 计算每个联系人的共同群聊数
+	sharedGroupCounts := s.buildSharedGroupCounts()
+	for i := range result {
+		result[i].SharedGroupsCount = sharedGroupCounts[result[i].Username]
+	}
+
 	sort.Slice(result, func(i, j int) bool { return result[i].TotalMessages > result[j].TotalMessages })
 
 	// 构建深夜密友排行
@@ -1155,6 +1163,71 @@ func (s *ContactService) GetGroupDayMessages(username, date string) []GroupChatM
 		return []GroupChatMessage{}
 	}
 	return msgs
+}
+
+// buildSharedGroupCounts 构建所有联系人的共同群聊数量映射（username → 共同群聊数）
+// 采用倒排索引：对每个群聊找出有发言的联系人，汇总计数
+func (s *ContactService) buildSharedGroupCounts() map[string]int {
+	result := make(map[string]int)
+
+	// 1. 获取所有群聊 username
+	rows, err := s.dbMgr.ContactDB.Query(`SELECT username FROM contact WHERE username LIKE '%@chatroom'`)
+	if err != nil {
+		return result
+	}
+	var groupUsernames []string
+	for rows.Next() {
+		var uname string
+		rows.Scan(&uname)
+		groupUsernames = append(groupUsernames, uname)
+	}
+	rows.Close()
+
+	// 2. 预加载每个消息 DB 的 Name2Id 映射（rowid → wxid）
+	idToWxid := make([]map[int64]string, len(s.dbMgr.MessageDBs))
+	for dbIdx, mdb := range s.dbMgr.MessageDBs {
+		idToWxid[dbIdx] = make(map[int64]string)
+		if nrows, nerr := mdb.Query("SELECT rowid, user_name FROM Name2Id"); nerr == nil {
+			for nrows.Next() {
+				var rid int64
+				var uname string
+				nrows.Scan(&rid, &uname)
+				idToWxid[dbIdx][rid] = uname
+			}
+			nrows.Close()
+		}
+	}
+
+	// 3. 对每个群聊，找出所有有发言的联系人并计数
+	twFilter := s.timeWhere()
+	for _, groupUname := range groupUsernames {
+		tableName := db.GetTableName(groupUname)
+		seenInGroup := make(map[string]bool)
+
+		for dbIdx, mdb := range s.dbMgr.MessageDBs {
+			var query string
+			if twFilter == "" {
+				query = fmt.Sprintf("SELECT DISTINCT real_sender_id FROM [%s]", tableName)
+			} else {
+				query = fmt.Sprintf("SELECT DISTINCT real_sender_id FROM [%s]%s", tableName, twFilter)
+			}
+			senderRows, err := mdb.Query(query)
+			if err != nil {
+				continue
+			}
+			for senderRows.Next() {
+				var senderID int64
+				senderRows.Scan(&senderID)
+				if wxid, ok := idToWxid[dbIdx][senderID]; ok && wxid != "" && !seenInGroup[wxid] {
+					seenInGroup[wxid] = true
+					result[wxid]++
+				}
+			}
+			senderRows.Close()
+		}
+	}
+
+	return result
 }
 
 // GetCommonGroups 返回当前用户与指定联系人共同所在的群聊列表

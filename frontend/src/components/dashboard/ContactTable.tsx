@@ -3,7 +3,7 @@
  */
 
 import React, { useState } from 'react';
-import { MessageCircle, Clock, TrendingUp } from 'lucide-react';
+import { MessageCircle, Clock, TrendingUp, Users } from 'lucide-react';
 import type { ContactStats } from '../../types';
 
 interface ContactTableProps {
@@ -46,6 +46,9 @@ export const ContactTable: React.FC<ContactTableProps> = ({
                 <div className="flex items-center gap-2"><MessageCircle size={14} />消息总数</div>
               </th>
               <th className="px-8 py-5 text-left text-xs font-black text-gray-500 uppercase tracking-wider">
+                <div className="flex items-center gap-2"><Users size={14} />共同群聊</div>
+              </th>
+              <th className="px-8 py-5 text-left text-xs font-black text-gray-500 uppercase tracking-wider">
                 <div className="flex items-center gap-2"><Clock size={14} />最后联系</div>
               </th>
               <th className="px-8 py-5 text-left text-xs font-black text-gray-500 uppercase tracking-wider">
@@ -79,6 +82,15 @@ export const ContactTable: React.FC<ContactTableProps> = ({
                 </td>
                 <td className="px-8 py-5">
                   <span className="font-bold text-[#1d1d1f]">{contact.total_messages.toLocaleString()}</span>
+                </td>
+                <td className="px-8 py-5">
+                  {(contact.shared_groups_count ?? 0) > 0 ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-600">
+                      <Users size={11} />{contact.shared_groups_count}
+                    </span>
+                  ) : (
+                    <span className="text-sm text-gray-300">-</span>
+                  )}
                 </td>
                 <td className="px-8 py-5">
                   <span className="text-sm font-medium text-gray-600">{contact.last_message_time || '-'}</span>
