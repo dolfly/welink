@@ -40,7 +40,9 @@ export interface GlobalStats {
   zero_msg_friends: number;
   total_messages: number;
   monthly_trend: Record<string, number>;
+  group_monthly_trend?: Record<string, number>;
   hourly_heatmap: number[];
+  group_hourly_heatmap?: number[];
   type_distribution: Record<string, number>;
   late_night_ranking: LateNightEntry[];
 }

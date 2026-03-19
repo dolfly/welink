@@ -46,7 +46,9 @@ type GlobalStats struct {
 	MidnightChamp     string            `json:"midnight_champ"`
 	EmojiKing         string            `json:"emoji_king"`
 	MonthlyTrend      map[string]int    `json:"monthly_trend"`
+	GroupMonthlyTrend map[string]int    `json:"group_monthly_trend"`
 	HourlyHeatmap     [24]int           `json:"hourly_heatmap"`
+	GroupHourlyHeatmap [24]int          `json:"group_hourly_heatmap"`
 	TypeMix           map[string]int    `json:"type_mix"`
 	LateNightRanking  []LateNightEntry  `json:"late_night_ranking"`
 }
@@ -399,6 +401,8 @@ func (s *ContactService) performAnalysis() {
 			}
 			return m
 		}(),
+		GroupMonthlyTrend:  s.buildGroupMonthlyTrend(),
+		GroupHourlyHeatmap: s.buildGroupHourlyHeatmap(),
 	}
 	maxDayVal := 0
 	for d, c := range globalDaily { if c > maxDayVal { s.global.BusiestDay = d; s.global.BusiestDayCount = c; maxDayVal = c } }
@@ -1426,6 +1430,90 @@ func (s *ContactService) SearchGroupMessages(username, query string) []GroupChat
 		msgs = msgs[:200]
 	}
 	return msgs
+}
+
+// buildGroupHourlyHeatmap 统计所有群聊的 24 小时消息分布
+func (s *ContactService) buildGroupHourlyHeatmap() [24]int {
+	var result [24]int
+
+	rows, err := s.dbMgr.ContactDB.Query(`SELECT username FROM contact WHERE username LIKE '%@chatroom'`)
+	if err != nil {
+		return result
+	}
+	var groupUsernames []string
+	for rows.Next() {
+		var uname string
+		rows.Scan(&uname)
+		groupUsernames = append(groupUsernames, uname)
+	}
+	rows.Close()
+
+	twFilter := s.timeWhere()
+	for _, groupUname := range groupUsernames {
+		tableName := db.GetTableName(groupUname)
+		for _, mdb := range s.dbMgr.MessageDBs {
+			var query string
+			if twFilter == "" {
+				query = fmt.Sprintf("SELECT create_time FROM [%s]", tableName)
+			} else {
+				query = fmt.Sprintf("SELECT create_time FROM [%s]%s", tableName, twFilter)
+			}
+			mRows, err := mdb.Query(query)
+			if err != nil {
+				continue
+			}
+			for mRows.Next() {
+				var ts int64
+				mRows.Scan(&ts)
+				h := time.Unix(ts, 0).In(s.tz).Hour()
+				result[h]++
+			}
+			mRows.Close()
+		}
+	}
+	return result
+}
+
+// buildGroupMonthlyTrend 统计所有群聊的月度消息量（month → count）
+func (s *ContactService) buildGroupMonthlyTrend() map[string]int {
+	result := make(map[string]int)
+
+	rows, err := s.dbMgr.ContactDB.Query(`SELECT username FROM contact WHERE username LIKE '%@chatroom'`)
+	if err != nil {
+		return result
+	}
+	var groupUsernames []string
+	for rows.Next() {
+		var uname string
+		rows.Scan(&uname)
+		groupUsernames = append(groupUsernames, uname)
+	}
+	rows.Close()
+
+	twFilter := s.timeWhere()
+	for _, groupUname := range groupUsernames {
+		tableName := db.GetTableName(groupUname)
+		for _, mdb := range s.dbMgr.MessageDBs {
+			var query string
+			if twFilter == "" {
+				query = fmt.Sprintf("SELECT create_time FROM [%s]", tableName)
+			} else {
+				query = fmt.Sprintf("SELECT create_time FROM [%s]%s", tableName, twFilter)
+			}
+			mRows, err := mdb.Query(query)
+			if err != nil {
+				continue
+			}
+			for mRows.Next() {
+				var ts int64
+				mRows.Scan(&ts)
+				month := time.Unix(ts, 0).In(s.tz).Format("2006-01")
+				result[month]++
+			}
+			mRows.Close()
+		}
+	}
+	return result
 }
 
 // buildSharedGroupCounts 构建所有联系人的共同群聊数量映射（username → 共同群聊数）
