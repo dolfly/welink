@@ -26,79 +26,91 @@ type Contact struct {
 	IsGroup  bool
 }
 
+// Arsenal 2025/26 first-team squad & coaching staff — COYG! 🔴⚪
 var demoContacts = []Contact{
-	{Username: "alice_wx", Nickname: "Alice", Remark: "同学 Alice", Flag: 3},
-	{Username: "bob_2024", Nickname: "Bob", Remark: "前同事 Bob", Flag: 3},
-	{Username: "charlie88", Nickname: "Charlie", Remark: "", Flag: 3},
-	{Username: "diana_life", Nickname: "Diana", Remark: "Diana 同学", Flag: 3},
-	{Username: "evan_tech", Nickname: "Evan", Remark: "Evan", Flag: 3},
-	{Username: "fiona_art", Nickname: "Fiona", Remark: "", Flag: 3},
-	{Username: "george_run", Nickname: "George", Remark: "George 跑步群友", Flag: 3},
-	{Username: "helen_biz", Nickname: "Helen", Remark: "Helen 老板", Flag: 3},
-	{Username: "ivan_game", Nickname: "Ivan", Remark: "", Flag: 3},
-	{Username: "julia_cook", Nickname: "Julia", Remark: "Julia 厨艺班", Flag: 3},
-	{Username: "kevin_music", Nickname: "Kevin", Remark: "", Flag: 3},
-	{Username: "lisa_travel", Nickname: "Lisa", Remark: "旅游达人 Lisa", Flag: 3},
+	// Coaching Staff
+	{Username: "arteta_mikel",        Nickname: "Mikel Arteta",        Remark: "主教练",   Flag: 3},
+	{Username: "stuivenberg_albert",  Nickname: "Albert Stuivenberg",  Remark: "助理教练", Flag: 3},
+	// Goalkeepers
+	{Username: "raya_david",          Nickname: "David Raya",          Remark: "1号",      Flag: 3},
+	{Username: "hein_karl",           Nickname: "Karl Hein",           Remark: "",         Flag: 3},
+	// Defenders
+	{Username: "white_ben",           Nickname: "Ben White",           Remark: "",         Flag: 3},
+	{Username: "gabriel_magalhaes",   Nickname: "Gabriel Magalhães",   Remark: "阿迪",     Flag: 3},
+	{Username: "timber_jurrien",      Nickname: "Jurriën Timber",      Remark: "",         Flag: 3},
+	{Username: "calafiori_riccardo",  Nickname: "Riccardo Calafiori",  Remark: "",         Flag: 3},
+	{Username: "zinchenko_oleksandr", Nickname: "Oleksandr Zinchenko", Remark: "锌锌",     Flag: 3},
+	{Username: "lewis_skelly_myles",  Nickname: "Myles Lewis-Skelly",  Remark: "MLS",      Flag: 3},
+	{Username: "tomiyasu_takehiro",   Nickname: "Takehiro Tomiyasu",   Remark: "冨安健洋", Flag: 3},
+	// Midfielders
+	{Username: "odegaard_martin",     Nickname: "Martin Ødegaard",     Remark: "队长",     Flag: 3},
+	{Username: "rice_declan",         Nickname: "Declan Rice",         Remark: "大米",     Flag: 3},
+	{Username: "partey_thomas",       Nickname: "Thomas Partey",       Remark: "",         Flag: 3},
+	{Username: "havertz_kai",         Nickname: "Kai Havertz",         Remark: "",         Flag: 3},
+	{Username: "vieira_fabio",        Nickname: "Fábio Vieira",        Remark: "",         Flag: 3},
+	{Username: "jorginho_jorge",      Nickname: "Jorginho",            Remark: "",         Flag: 3},
+	// Forwards
+	{Username: "saka_bukayo",         Nickname: "Bukayo Saka",         Remark: "7号",      Flag: 3},
+	{Username: "martinelli_gabriel",  Nickname: "Gabriel Martinelli",  Remark: "马丁内利", Flag: 3},
+	{Username: "trossard_leandro",    Nickname: "Leandro Trossard",    Remark: "",         Flag: 3},
+	{Username: "jesus_gabriel",       Nickname: "Gabriel Jesus",       Remark: "耶稣",     Flag: 3},
+	{Username: "nwaneri_ethan",       Nickname: "Ethan Nwaneri",       Remark: "小天才",   Flag: 3},
+	{Username: "sterling_raheem",     Nickname: "Raheem Sterling",     Remark: "",         Flag: 3},
 	// Groups
-	{Username: "teamwork2024@chatroom", Nickname: "工作群 2024", Remark: "", Flag: 0, IsGroup: true},
-	{Username: "family_circle@chatroom", Nickname: "家庭群", Remark: "", Flag: 0, IsGroup: true},
-	{Username: "college_friends@chatroom", Nickname: "大学同学群", Remark: "", Flag: 0, IsGroup: true},
+	{Username: "arsenal_dressing_room@chatroom", Nickname: "更衣室",         Remark: "", Flag: 0, IsGroup: true},
+	{Username: "emirates_north_bank@chatroom",   Nickname: "北伦敦红区",     Remark: "", Flag: 0, IsGroup: true},
+	{Username: "tactics_board@chatroom",         Nickname: "战术板",         Remark: "", Flag: 0, IsGroup: true},
 }
 
 // demoSelfWxid is the fake "me" wxid used in demo messages.
 const demoSelfWxid = "demo_self_wxid"
 
 var textMessages = []string{
+	// 日常
 	"在吗？",
-	"最近怎么样？",
-	"好久不见！",
-	"周末有空吗？",
-	"刚看到一篇很好的文章，分享给你",
-	"哈哈哈哈",
-	"明天见！",
+	"明天训练几点开始？",
 	"收到，知道了",
 	"嗯嗯",
 	"好的",
 	"没问题",
-	"你在哪里？",
-	"吃了吗？",
-	"今天天气真好",
-	"忙吗？",
-	"有个事情想跟你说",
-	"新年快乐！",
-	"生日快乐！",
-	"辛苦了",
-	"太厉害了！",
-	"感谢你的帮助",
-	"下次一起吃饭吧",
-	"刚到家",
-	"马上出发",
 	"稍等一下",
-	"好的，明白了",
-	"最近工作很忙",
-	"终于搞定了",
-	"一起来嘛",
-	"想你了",
+	"辛苦了",
+	"哈哈哈哈",
 	"加油！",
-	"给你看个东西",
-	"哈哈，太搞笑了",
-	"这个你知道吗？",
-	"我也觉得",
-	"真的吗？",
-	"不错啊",
-	"有意思",
-	"对对对",
-	"我去了",
-	"到了吗？",
-	"快点！",
-	"来不来？",
-	"下班了",
-	"今天很累",
-	"周末去哪里玩？",
-	"感觉不错",
-	"哈哈哈",
-	"好的呢",
-	"谢谢！",
+	"生日快乐！",
+	"马上到",
+	"已经到更衣室了",
+	"热身做好了吗？",
+	"伤势恢复得怎么样了？",
+	"今晚吃什么？",
+	// 足球 & 训练
+	"COYG！",
+	"北伦敦是红色的！",
+	"We Are Arsenal！",
+	"今天的传跑配合真的很顺",
+	"那个进球太绝了！！",
+	"压迫打得不错，继续保持",
+	"下半场要提速，前场逼抢",
+	"定位球练得怎么样了？",
+	"点球又进了！",
+	"裁判眼睛看清楚！",
+	"越位？我明明在线上",
+	"今晚欧冠，全力以赴",
+	"酋长球场今晚一定炸裂",
+	"赢了！！！冠军我们的",
+	"这赛季联赛冠军一定是我们的",
+	"战术板上Arteta说得很清楚",
+	"防线要整体压上，别拉得太开",
+	"左路打出去！",
+	"打穿他们！",
+	"角球机会，全员压上",
+	"补时进球，疯了！！",
+	"上午战术课，下午恢复训练",
+	"昨晚没睡好，腿有点沉",
+	"赛后冰浴真的很爽",
+	"新赛季目标：三冠王",
+	"不败赛季我们可以的",
+	"Invincibles 2.0 加油",
 }
 
 // tableNameForUser returns the Msg_<md5> table name for a given username.
@@ -252,17 +264,21 @@ func createMessageDB(path string) error {
 
 func msgCountForContact(c Contact, rng *rand.Rand) int {
 	if c.IsGroup {
-		return 200 + rng.Intn(800)
+		return 300 + rng.Intn(900)
 	}
 	switch c.Username {
-	case "alice_wx":
+	case "odegaard_martin": // 队长，联系最多
 		return 1500 + rng.Intn(500)
-	case "bob_2024":
-		return 800 + rng.Intn(400)
-	case "helen_biz":
-		return 1200 + rng.Intn(300)
+	case "saka_bukayo": // 7号核心
+		return 1200 + rng.Intn(400)
+	case "arteta_mikel": // 主教练
+		return 900 + rng.Intn(300)
+	case "rice_declan", "havertz_kai":
+		return 700 + rng.Intn(300)
+	case "gabriel_magalhaes", "martinelli_gabriel":
+		return 600 + rng.Intn(300)
 	default:
-		return 50 + rng.Intn(400)
+		return 60 + rng.Intn(400)
 	}
 }
 

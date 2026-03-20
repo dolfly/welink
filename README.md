@@ -169,8 +169,10 @@ cd welink
 docker compose -f docker-compose.demo.yml up
 ```
 
-访问 [localhost:3000](http://localhost:3000) 即可看到预置了 12 个好友、3 个群聊和数千条模拟消息的完整界面。
+访问 [localhost:3000](http://localhost:3000) 即可看到预置了完整联系人列表、3 个群聊和数千条模拟消息的界面。
 
+> Demo 数据以**阿森纳 2025/26 赛季一线队球员与教练组**为联系人（Arteta、Ødegaard、Saka、Rice、Gabriel……），消息内容也充满更衣室气息。**COYG！** 🔴⚪
+>
 > Demo 模式下后端会在容器内自动生成仿真数据库，无需挂载任何本地目录。所有数据均为随机生成，不涉及真实聊天记录。
 
 
