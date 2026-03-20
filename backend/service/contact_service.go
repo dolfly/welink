@@ -1784,7 +1784,7 @@ func (s *ContactService) GetCoolingRanking() []CoolingEntry {
 	}
 
 	sort.Slice(entries, func(i, j int) bool {
-		return entries[i].DropRatio > entries[j].DropRatio
+		return entries[i].PeakMonthly > entries[j].PeakMonthly
 	})
 	if len(entries) > 20 {
 		entries = entries[:20]
