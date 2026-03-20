@@ -88,7 +88,7 @@ export const CoolingRanking: React.FC<Props> = ({ isInitialized, contacts, onCon
                   />
                 </div>
                 <div className="flex items-center justify-between text-[10px] text-gray-400">
-                  <span>峰值 <span className="font-bold text-gray-600">{Math.round(entry.peak_monthly)}</span> 条/月</span>
+                  <span>峰值 <span className="font-bold text-gray-600">{Math.round(entry.peak_monthly)}</span> 条/月 <span className="text-gray-300">({entry.peak_period})</span></span>
                   <span>近期 <span className="font-bold text-gray-600">{Math.round(entry.recent_monthly)}</span> 条/月</span>
                 </div>
               </div>
