@@ -29,6 +29,8 @@ export interface ContactStats extends Contact {
   peak_monthly?: number;
   peak_period?: string;
   recent_monthly?: number;
+  recall_count?: number;
+  avg_msg_len?: number;
 }
 
 export interface LateNightEntry {
@@ -100,7 +102,7 @@ export interface BackendStatus {
   total_cached: number;
 }
 
-export type TabType = 'dashboard' | 'db' | 'groups' | 'privacy' | 'search';
+export type TabType = 'dashboard' | 'db' | 'groups' | 'privacy' | 'search' | 'timeline';
 
 export interface CoolingEntry {
   username: string;

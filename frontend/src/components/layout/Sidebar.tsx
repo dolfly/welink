@@ -2,7 +2,7 @@
  * 侧边栏组件 - 桌面侧边 / 手机底部导航栏
  */
 
-import { Users, Database, Sun, Moon, MessagesSquare, BookOpen, Github, ShieldOff, Search } from 'lucide-react';
+import { Users, Database, Sun, Moon, MessagesSquare, BookOpen, Github, ShieldOff, Search, GitCommitHorizontal } from 'lucide-react';
 import type { TabType } from '../../types';
 
 interface SidebarProps {
@@ -16,6 +16,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, dark, 
   const navItems: { tab: TabType; icon: React.ReactNode; label: string }[] = [
     { tab: 'dashboard', icon: <Users size={22} strokeWidth={2} />, label: '好友' },
     { tab: 'groups', icon: <MessagesSquare size={22} strokeWidth={2} />, label: '群聊' },
+    { tab: 'timeline', icon: <GitCommitHorizontal size={22} strokeWidth={2} />, label: '时间线' },
     { tab: 'search', icon: <Search size={22} strokeWidth={2} />, label: '搜索' },
     { tab: 'db', icon: <Database size={22} strokeWidth={2} />, label: '数据库' },
     { tab: 'privacy', icon: <ShieldOff size={22} strokeWidth={2} />, label: '屏蔽' },

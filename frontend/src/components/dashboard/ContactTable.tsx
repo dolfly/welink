@@ -11,7 +11,7 @@ interface ContactTableProps {
   onContactClick: (contact: ContactStats) => void;
 }
 
-type SortKey = 'name' | 'total_messages' | 'shared_groups' | 'last_message_time' | 'status' | 'peak_monthly' | 'recent_monthly';
+type SortKey = 'name' | 'total_messages' | 'shared_groups' | 'last_message_time' | 'status' | 'peak_monthly' | 'recent_monthly' | 'avg_msg_len';
 type SortDir = 'asc' | 'desc';
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
@@ -72,6 +72,9 @@ export const ContactTable: React.FC<ContactTableProps> = ({ contacts, onContactC
       case 'recent_monthly':
         cmp = (a.recent_monthly ?? 0) - (b.recent_monthly ?? 0);
         break;
+      case 'avg_msg_len':
+        cmp = (a.avg_msg_len ?? 0) - (b.avg_msg_len ?? 0);
+        break;
       case 'status':
         cmp = getStatusTier(a) - getStatusTier(b);
         break;
@@ -118,6 +121,9 @@ export const ContactTable: React.FC<ContactTableProps> = ({ contacts, onContactC
               </th>
               <th className={thClass} onClick={() => handleSort('recent_monthly')}>
                 <div className="flex items-center gap-1"><Clock size={14} />近一个月<SortIcon col="recent_monthly" /></div>
+              </th>
+              <th className={thClass} onClick={() => handleSort('avg_msg_len')}>
+                <div className="flex items-center gap-1">均消息长<SortIcon col="avg_msg_len" /></div>
               </th>
               <th className={thClass} onClick={() => handleSort('last_message_time')}>
                 <div className="flex items-center gap-1">最后联系<SortIcon col="last_message_time" /></div>
@@ -181,6 +187,13 @@ export const ContactTable: React.FC<ContactTableProps> = ({ contacts, onContactC
                     <span className="font-bold text-[#07c160]">{contact.recent_monthly!.toLocaleString()}<span className="text-xs text-gray-400 ml-1 font-normal">条</span></span>
                   ) : (
                     <span className="text-sm text-gray-300">0</span>
+                  )}
+                </td>
+                <td className="px-8 py-5">
+                  {(contact.avg_msg_len ?? 0) > 0 ? (
+                    <span className="font-bold text-[#1d1d1f]">{contact.avg_msg_len!.toFixed(1)}<span className="text-xs text-gray-400 ml-1 font-normal">字</span></span>
+                  ) : (
+                    <span className="text-sm text-gray-300">-</span>
                   )}
                 </td>
                 <td className="px-8 py-5">

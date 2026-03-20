@@ -158,6 +158,18 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
               <span>始于 {contact.first_message_time}</span>
               <span className="text-gray-300">•</span>
               <span>{contact.total_messages.toLocaleString()} 条消息</span>
+              {(contact.recall_count ?? 0) > 0 && (
+                <>
+                  <span className="text-gray-300">•</span>
+                  <span className="text-orange-400">撤回 {contact.recall_count} 次</span>
+                </>
+              )}
+              {(contact.avg_msg_len ?? 0) > 0 && (
+                <>
+                  <span className="text-gray-300">•</span>
+                  <span>均 {contact.avg_msg_len!.toFixed(1)} 字/条</span>
+                </>
+              )}
             </p>
             {(contact.their_messages != null || contact.my_messages != null) && (
               <div className="flex items-center gap-3 mt-1.5">

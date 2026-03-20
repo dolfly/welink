@@ -19,6 +19,7 @@ import { ContactTable } from './components/dashboard/ContactTable';
 import { DatabaseView } from './components/dashboard/DatabaseView';
 import { LateNightRanking } from './components/dashboard/LateNightRanking';
 import { SearchView } from './components/search/SearchView';
+import { TimelineView } from './components/timeline/TimelineView';
 import { GroupsView, GroupDetailModal } from './components/groups/GroupsView';
 import { useDarkMode } from './hooks/useDarkMode';
 
@@ -323,6 +324,8 @@ function App() {
           </div>
         ) : activeTab === 'groups' ? (
           <GroupsView allContacts={allContacts} onContactClick={handleContactClick} blockedGroups={blockedGroups} onBlockGroup={addBlockedGroup} />
+        ) : activeTab === 'timeline' ? (
+          <TimelineView contacts={contacts} onContactClick={handleContactClick} />
         ) : activeTab === 'search' ? (
           <SearchView contacts={contacts} onContactClick={handleContactClick} />
         ) : activeTab === 'privacy' ? (

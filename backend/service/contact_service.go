@@ -78,9 +78,11 @@ type ContactStatsExtended struct {
 	TypePct          map[string]float64 `json:"type_pct"`
 	TypeCnt          map[string]int     `json:"type_cnt"`
 	SharedGroupsCount int               `json:"shared_groups_count"`
-	PeakMonthly   int64  `json:"peak_monthly"`
-	PeakPeriod    string `json:"peak_period"`
-	RecentMonthly int64  `json:"recent_monthly"`
+	PeakMonthly   int64   `json:"peak_monthly"`
+	PeakPeriod    string  `json:"peak_period"`
+	RecentMonthly int64   `json:"recent_monthly"`
+	RecallCount   int64   `json:"recall_count"`
+	AvgMsgLen     float64 `json:"avg_msg_len"`
 }
 
 type ContactService struct {
@@ -296,6 +298,7 @@ func (s *ContactService) performAnalysis() {
 			typeCounts := make(map[string]int)
 			monthly := make(map[string]int)
 			recentCutoff := time.Now().In(s.tz).AddDate(0, -1, 0)
+			var totalTextLen, textCount int64
 
 			for _, mdb := range s.dbMgr.MessageDBs {
 				mRows, err := mdb.Query(fmt.Sprintf("SELECT local_type, create_time, message_content, COALESCE(WCDB_CT_message_content,0) FROM [%s]%s", tableName, timeWhere))
@@ -304,6 +307,7 @@ func (s *ContactService) performAnalysis() {
 					var lt int; var ts int64; var rawContent []byte; var ct int64
 					mRows.Scan(&lt, &ts, &rawContent, &ct)
 					content := decodeGroupContent(rawContent, ct)
+					if lt == 10000 { ext.RecallCount++; continue }
 					ext.TotalMessages++
 
 					if ts < globalFirstTs { globalFirstTs = ts }
@@ -320,6 +324,7 @@ func (s *ContactService) performAnalysis() {
 					switch lt {
 					case 1:
 						typeName = "文本"
+						if content != "" && !s.isSys(content) { totalTextLen += int64(len([]rune(content))); textCount++ }
 						if ts < firstMsgTs && content != "" && !s.isSys(content) {
 							firstMsgTs = ts
 							ext.FirstMsg = content
@@ -352,6 +357,7 @@ func (s *ContactService) performAnalysis() {
 				for m, cnt := range monthly {
 					if int64(cnt) > ext.PeakMonthly { ext.PeakMonthly = int64(cnt); ext.PeakPeriod = m }
 				}
+				if textCount > 0 { ext.AvgMsgLen = float64(totalTextLen) / float64(textCount) }
 				ext.TypePct = make(map[string]float64)
 				ext.TypeCnt = make(map[string]int)
 				for k, v := range typeCounts {
