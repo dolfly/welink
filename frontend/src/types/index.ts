@@ -97,7 +97,26 @@ export interface BackendStatus {
   total_cached: number;
 }
 
-export type TabType = 'dashboard' | 'db' | 'groups' | 'privacy';
+export type TabType = 'dashboard' | 'db' | 'groups' | 'privacy' | 'search';
+
+export interface CoolingEntry {
+  username: string;
+  display_name: string;
+  small_head_url: string;
+  peak_monthly: number;
+  recent_monthly: number;
+  drop_ratio: number;
+  peak_period: string;
+  total_messages: number;
+}
+
+export interface GlobalSearchGroup {
+  username: string;
+  display_name: string;
+  small_head_url: string;
+  messages: ChatMessage[];
+  count: number;
+}
 
 export interface GroupInfo {
   username: string;

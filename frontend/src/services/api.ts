@@ -4,7 +4,7 @@
  */
 
 import axios from 'axios';
-import type { ContactStats, GlobalStats, WordCount, DBInfo, BackendStatus, TableInfo, ColumnInfo, TableData, ContactDetail, GroupInfo, GroupDetail, FilteredStats, SentimentResult, GroupChatMessage } from '../types';
+import type { ContactStats, GlobalStats, WordCount, DBInfo, BackendStatus, TableInfo, ColumnInfo, TableData, ContactDetail, GroupInfo, GroupDetail, FilteredStats, SentimentResult, GroupChatMessage, CoolingEntry, GlobalSearchGroup } from '../types';
 
 // 配置 axios 实例
 const api = axios.create({
@@ -98,6 +98,14 @@ export const contactsApi = {
    */
   getCommonGroups: (username: string) =>
     api.get<void, GroupInfo[]>('/contacts/common-groups', { params: { username } }),
+
+  getCooling: () =>
+    api.get<void, CoolingEntry[]>('/contacts/cooling'),
+};
+
+export const searchApi = {
+  global: (q: string) =>
+    api.get<void, GlobalSearchGroup[]>('/search', { params: { q } }),
 };
 
 export const globalApi = {

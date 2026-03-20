@@ -1672,3 +1672,200 @@ func containsEmoji(s string) bool {
 	}
 	return false
 }
+
+// ─── 关系降温榜 ───────────────────────────────────────────────────────────────
+
+// CoolingEntry 降温榜条目
+type CoolingEntry struct {
+	Username      string  `json:"username"`
+	DisplayName   string  `json:"display_name"`
+	SmallHeadURL  string  `json:"small_head_url"`
+	PeakMonthly   float64 `json:"peak_monthly"`   // 历史峰值3月均值
+	RecentMonthly float64 `json:"recent_monthly"` // 近3月均值
+	DropRatio     float64 `json:"drop_ratio"`     // (peak-recent)/peak
+	PeakPeriod    string  `json:"peak_period"`    // 峰值起始月 "2022-03"
+	TotalMessages int64   `json:"total_messages"`
+}
+
+// GetCoolingRanking 返回关系降温最明显的联系人（历史峰值3月均 vs 近3月均）
+func (s *ContactService) GetCoolingRanking() []CoolingEntry {
+	s.cacheMu.RLock()
+	contacts := s.cache
+	s.cacheMu.RUnlock()
+
+	// 时区偏移秒数（用于 SQLite strftime）
+	_, tzOffset := time.Now().In(s.tz).Zone()
+
+	recentCutoff := time.Now().In(s.tz).AddDate(0, -3, 0).Format("2006-01")
+	var entries []CoolingEntry
+
+	for _, c := range contacts {
+		if c.TotalMessages < 30 {
+			continue
+		}
+		tableName := db.GetTableName(c.Username)
+
+		// 用 SQL GROUP BY 按月聚合，避免逐行扫描
+		monthly := make(map[string]int)
+		for _, mdb := range s.dbMgr.MessageDBs {
+			rows, err := mdb.Query(fmt.Sprintf(
+				`SELECT strftime('%%Y-%%m', create_time + %d, 'unixepoch') AS month, COUNT(*) FROM [%s] GROUP BY month`,
+				tzOffset, tableName))
+			if err != nil {
+				continue
+			}
+			for rows.Next() {
+				var month string
+				var cnt int
+				rows.Scan(&month, &cnt)
+				monthly[month] += cnt
+			}
+			rows.Close()
+		}
+		if len(monthly) < 4 {
+			continue
+		}
+
+		months := make([]string, 0, len(monthly))
+		for m := range monthly {
+			months = append(months, m)
+		}
+		sort.Strings(months)
+
+		// 历史峰值：找连续 3 个月的最高均值窗口
+		var peakAvg float64
+		var peakPeriod string
+		for i := 0; i <= len(months)-3; i++ {
+			avg := float64(monthly[months[i]]+monthly[months[i+1]]+monthly[months[i+2]]) / 3
+			if avg > peakAvg {
+				peakAvg = avg
+				peakPeriod = months[i]
+			}
+		}
+		if peakAvg < 10 {
+			continue
+		}
+
+		// 近 3 个月均值
+		recentSum, recentN := 0, 0
+		for _, m := range months {
+			if m >= recentCutoff {
+				recentSum += monthly[m]
+				recentN++
+			}
+		}
+		if recentN == 0 {
+			recentN = 1
+		}
+		recentAvg := float64(recentSum) / float64(recentN)
+
+		dropRatio := (peakAvg - recentAvg) / peakAvg
+		if dropRatio < 0.5 {
+			continue
+		}
+
+		name := c.Remark
+		if name == "" {
+			name = c.Nickname
+		}
+		if name == "" {
+			name = c.Username
+		}
+		entries = append(entries, CoolingEntry{
+			Username:      c.Username,
+			DisplayName:   name,
+			SmallHeadURL:  c.SmallHeadURL,
+			PeakMonthly:   peakAvg,
+			RecentMonthly: recentAvg,
+			DropRatio:     dropRatio,
+			PeakPeriod:    peakPeriod,
+			TotalMessages: c.TotalMessages,
+		})
+	}
+
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].DropRatio > entries[j].DropRatio
+	})
+	if len(entries) > 20 {
+		entries = entries[:20]
+	}
+	return entries
+}
+
+// ─── 全局搜索 ──────────────────────────────────────────────────────────────────
+
+// GlobalSearchGroup 单个联系人的搜索结果组
+type GlobalSearchGroup struct {
+	Username     string        `json:"username"`
+	DisplayName  string        `json:"display_name"`
+	SmallHeadURL string        `json:"small_head_url"`
+	Messages     []ChatMessage `json:"messages"`
+	Count        int           `json:"count"`
+}
+
+// GlobalSearch 跨所有联系人的消息搜索，按联系人分组返回，每人最多 5 条
+func (s *ContactService) GlobalSearch(q string) []GlobalSearchGroup {
+	s.cacheMu.RLock()
+	contacts := s.cache
+	s.cacheMu.RUnlock()
+
+	pattern := "%" + q + "%"
+	var results []GlobalSearchGroup
+
+	for _, c := range contacts {
+		tableName := db.GetTableName(c.Username)
+		var msgs []ChatMessage
+
+		for _, mdb := range s.dbMgr.MessageDBs {
+			var contactRowID int64 = -1
+			mdb.QueryRow(fmt.Sprintf("SELECT rowid FROM Name2Id WHERE user_name = %q", c.Username)).Scan(&contactRowID)
+
+			rows, err := mdb.Query(fmt.Sprintf(
+				`SELECT create_time, local_type, message_content, COALESCE(real_sender_id,0)
+				 FROM [%s] WHERE local_type = 1 AND message_content LIKE ? ORDER BY create_time DESC LIMIT 5`,
+				tableName), pattern)
+			if err != nil {
+				continue
+			}
+			for rows.Next() {
+				var ts int64
+				var lt int
+				var content string
+				var senderID int64
+				rows.Scan(&ts, &lt, &content, &senderID)
+				dt := time.Unix(ts, 0).In(s.tz)
+				isMine := contactRowID < 0 || senderID != contactRowID
+				msgs = append(msgs, ChatMessage{
+					Time:    dt.Format("15:04"),
+					Date:    dt.Format("2006-01-02"),
+					Content: content,
+					IsMine:  isMine,
+					Type:    lt,
+				})
+			}
+			rows.Close()
+		}
+
+		if len(msgs) > 0 {
+			name := c.Remark
+			if name == "" {
+				name = c.Nickname
+			}
+			if name == "" {
+				name = c.Username
+			}
+			results = append(results, GlobalSearchGroup{
+				Username:     c.Username,
+				DisplayName:  name,
+				SmallHeadURL: c.SmallHeadURL,
+				Messages:     msgs,
+				Count:        len(msgs),
+			})
+		}
+	}
+
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].Count > results[j].Count
+	})
+	return results
+}

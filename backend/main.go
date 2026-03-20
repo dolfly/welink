@@ -174,6 +174,21 @@ func main() {
 			c.JSON(http.StatusOK, contactSvc.SearchMessages(uname, q, includeMine))
 		})
 
+		// 关系降温榜
+		api.GET("/contacts/cooling", func(c *gin.Context) {
+			c.JSON(http.StatusOK, contactSvc.GetCoolingRanking())
+		})
+
+		// 全局跨联系人消息搜索
+		api.GET("/search", func(c *gin.Context) {
+			q := c.Query("q")
+			if q == "" {
+				c.JSON(400, gin.H{"error": "q required"})
+				return
+			}
+			c.JSON(http.StatusOK, contactSvc.GlobalSearch(q))
+		})
+
 		// 某月的文本消息（情感分析详情）
 		api.GET("/contacts/messages/month", func(c *gin.Context) {
 			uname := c.Query("username")
