@@ -20,7 +20,8 @@
   <a href="https://github.com/runzhliu/welink/stargazers">
     <img src="https://img.shields.io/github/stars/runzhliu/welink?style=flat" alt="Stars" />
   </a>
-  <img src="https://img.shields.io/badge/platform-macOS%2012%2B-lightgrey?logo=apple" alt="Platform" />
+  <img src="https://img.shields.io/badge/platform-macOS%2012%2B-lightgrey?logo=apple" alt="Platform macOS" />
+  <img src="https://img.shields.io/badge/platform-Windows%2010%2B-lightgrey?logo=windows" alt="Platform Windows" />
   <img src="https://img.shields.io/badge/data-local%20only-brightgreen" alt="Local Only" />
 </p>
 
@@ -178,7 +179,7 @@ docker compose -f docker-compose.demo.yml up
 
 ## 使用前提
 
-目前仅支持 **macOS 12（Monterey）及以上版本**，Windows / Linux 支持敬请期待。
+目前支持 **macOS 12（Monterey）及以上版本** 和 **Windows 10 1903 及以上版本**。
 
 **第一步：把手机聊天记录同步到电脑（推荐）**
 
@@ -186,7 +187,7 @@ docker compose -f docker-compose.demo.yml up
 
 **第二步：解密数据库**
 
-确保 Mac 上的微信处于运行状态，然后使用 [wechat-decrypt](https://github.com/ylytdeng/wechat-decrypt) 提取并解密数据库：
+确保电脑上的微信处于运行状态，然后使用 [wechat-decrypt](https://github.com/ylytdeng/wechat-decrypt) 提取并解密数据库（支持 macOS 和 Windows）：
 
 ```bash
 git clone https://github.com/ylytdeng/wechat-decrypt
@@ -195,7 +196,7 @@ sudo python3 main.py
 # 选择 decrypt 模式
 ```
 
-解密完成后会生成 `decrypted/` 目录，将其中内容放到以下结构：
+解密完成后会生成 `decrypted/` 目录，结构如下：
 
 ```
 decrypted/
@@ -207,9 +208,11 @@ decrypted/
     └── ...
 ```
 
-**第三步：放置解密后的数据库**
+**第三步：放置解密后的数据库（Docker 模式）**
 
-将上一步生成的 `decrypted/` 目录放在 `welink/` 仓库**内部**，目录结构如下：
+> **macOS / Windows App 用户无需此步骤**——App 启动后在设置页面选择 `decrypted/` 目录路径即可，放在任意位置均可。
+
+Docker 模式需将 `decrypted/` 放在 `welink/` 仓库**内部**：
 
 ```
 welink/                ← 本仓库
@@ -222,11 +225,8 @@ welink/                ← 本仓库
     │   └── contact.db
     └── message/
         ├── message_0.db
-        ├── message_1.db
         └── ...
 ```
-
-> wechat-decrypt 生成的 `decrypted/` 目录内部已是上述结构，直接移动过来即可，无需手动调整。
 
 **第四步：启动 WeLink**
 
@@ -266,7 +266,7 @@ App 启动后会弹出配置向导：
 
 **有解密好的微信数据库：**
 
-在「解密数据库目录」一栏点击「浏览」选择 `decrypted/` 目录（参见下方[解密步骤](#使用前提)），日志目录可选填，点击「完成配置，开始分析」即可。
+在「解密数据库目录」一栏点击「浏览」选择 `decrypted/` 目录（可放在任意位置），日志目录可选填，点击「完成配置，开始分析」即可。
 
 **没有数据，只想看效果：**
 
@@ -284,6 +284,36 @@ App 启动后会弹出配置向导：
 git clone https://github.com/runzhliu/welink
 cd welink
 make dmg          # 生成 dist/WeLink.dmg
+```
+
+## Windows App（无需 Docker）
+
+不想装 Docker？可以直接下载原生 Windows App，无需命令行、无需 Docker、无需任何依赖。
+
+> **系统要求：Windows 10 1903 及以上**（Windows 11 完全支持）
+
+### 安装
+
+1. 前往 [GitHub Releases](https://github.com/runzhliu/welink/releases) 下载最新的 `WeLink-windows-amd64.zip`
+2. 解压到任意目录，双击 `WeLink.exe` 运行
+
+> **提示缺少 WebView2 Runtime？** Windows 11 及安装了 Microsoft Edge 的 Windows 10 已自带，无需额外安装。若提示缺少，请前往 [Microsoft 官网](https://developer.microsoft.com/microsoft-edge/webview2/) 下载 Evergreen Bootstrapper（约 2 MB）安装后重试。
+
+### 首次配置
+
+启动后弹出配置向导：
+
+- **有解密好的数据库**：点击「浏览」选择 `decrypted\` 目录（可放在任意位置），点击「完成配置，开始分析」
+- **只想看效果**：留空，点击「使用演示数据，开始分析」
+
+### 从源码构建
+
+如需自行编译（需安装 [Go 1.22+](https://go.dev/dl/) 和 [Node.js 18+](https://nodejs.org/)）：
+
+```bash
+git clone https://github.com/runzhliu/welink
+cd welink
+make exe          # 生成 dist/WeLink-windows-amd64.zip
 ```
 
 ## 配置
