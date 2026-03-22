@@ -76,7 +76,7 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({ onStart, loading, isAp
           <Monitor size={18} className="text-gray-300 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-bold">支持 macOS 12+ 和 Windows 10+</p>
-            <p className="text-xs text-gray-400 mt-0.5">数据库解密步骤目前需在 macOS 上完成，解密后可在 Windows 上使用</p>
+            <p className="text-xs text-gray-400 mt-0.5">App 版本启动后在设置页面选择 decrypted/ 目录路径即可，放在任意位置均可</p>
           </div>
         </div>
 
@@ -109,8 +109,8 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({ onStart, loading, isAp
             <div className="flex gap-3">
               <div className="w-6 h-6 rounded-full bg-[#07c16015] text-[#07c160] text-xs font-black flex items-center justify-center flex-shrink-0 mt-0.5">2</div>
               <div>
-                <p className="text-sm font-bold text-[#1d1d1f]">在 Mac 上解密数据库</p>
-                <p className="text-xs text-gray-400 mt-0.5">解密工具目前仅支持 macOS，需要确保微信在 Mac 上保持运行，工具会从进程内存读取密钥。<span className="text-[#07c160] font-medium">Windows 用户请先在 Mac 上完成解密，再将 decrypted/ 目录拷贝到 Windows 电脑。</span></p>
+                <p className="text-sm font-bold text-[#1d1d1f]">确保微信在电脑上保持运行</p>
+                <p className="text-xs text-gray-400 mt-0.5">解密工具（macOS / Windows 均支持）需要从运行中的微信进程内存读取密钥</p>
               </div>
             </div>
 
@@ -149,8 +149,10 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({ onStart, loading, isAp
                     └── message/message_*.db
                   </code>
                 </div>
-                {isAppMode && (
-                  <p className="text-xs text-[#07c160] mt-1.5 font-medium">✓ 已完成配置，WeLink 将自动读取您指定的目录</p>
+                {isAppMode ? (
+                  <p className="text-xs text-[#07c160] mt-1.5 font-medium">✓ App 模式：decrypted/ 可放在任意位置，在设置页面选择路径即可</p>
+                ) : (
+                  <p className="text-xs text-gray-400 mt-1.5">Docker 模式需将 decrypted/ 放在项目仓库根目录内</p>
                 )}
               </div>
             </div>
