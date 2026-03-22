@@ -132,7 +132,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
-          body: ""
           files: dist/WeLink.dmg
 
   # ─── Windows EXE ────────────────────────────────────────────────────────────
@@ -174,5 +173,4 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
-          body: ""
           files: dist/WeLink-windows-amd64.zip
