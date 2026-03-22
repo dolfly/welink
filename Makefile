@@ -146,19 +146,22 @@ _exe-frontend:
 
 _exe-binary: _exe-frontend
 	@echo "→ 生成 Windows 资源文件（图标 + 版本信息）..."
-	cd backend && go install github.com/josephspurrier/goversioninfo/cmd/goversioninfo@latest && \
-	  python3 -c "\
-import json, sys; \
+	@cd backend && python3 -c "\
+import json; \
 v='$(APP_VERSION)'.lstrip('v').split('-')[0].split('.'); \
 parts=(v+['0','0','0'])[:4]; \
 d=json.load(open('versioninfo.json')); \
-fv={'Major':int(parts[0]),'Minor':int(parts[1]),'Patch':int(parts[2]),'Build':int(parts[3])}; \
+fv={'Major':int(parts[0]) if parts[0].isdigit() else 0,'Minor':int(parts[1]) if parts[1].isdigit() else 0,'Patch':int(parts[2]) if parts[2].isdigit() else 0,'Build':0}; \
 d['FixedFileInfo']['FileVersion']=fv; d['FixedFileInfo']['ProductVersion']=fv; \
 d['StringFileInfo']['FileVersion']='$(APP_VERSION)'; \
 d['StringFileInfo']['ProductVersion']='$(APP_VERSION)'; \
-json.dump(d,open('versioninfo_build.json','w'),ensure_ascii=False,indent=2)" && \
-	  goversioninfo -o resource_windows.syso versioninfo_build.json && \
-	  rm -f versioninfo_build.json
+json.dump(d,open('versioninfo_build.json','w'),ensure_ascii=False,indent=2)"
+	@cd backend && if command -v goversioninfo >/dev/null 2>&1; then \
+	  goversioninfo -o resource_windows.syso versioninfo_build.json && echo "→ 资源文件已嵌入（图标 + 版本信息）"; \
+	else \
+	  echo "→ 跳过资源嵌入（goversioninfo 未安装，可运行 go install github.com/josephspurrier/goversioninfo/cmd/goversioninfo@latest 安装）"; \
+	fi
+	@rm -f backend/versioninfo_build.json
 	@echo "→ 编译 Windows amd64（CGO_ENABLED=0，纯 Go WebView2）..."
 	cd backend && \
 	  CGO_ENABLED=0 GOOS=windows GOARCH=amd64 \
