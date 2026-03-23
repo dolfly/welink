@@ -1,0 +1,10 @@
+node_modules
+.vitepress/cache
+certs/
+.env*
+*.pem
+*.key
+*.crt
+.npmrc
+npm-debug.log
+.DS_Store

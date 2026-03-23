@@ -55,3 +55,11 @@ CLAUDE.md
 .env.*.local
 pr/
 REFACTORING.md
+# SSL certificates
+docs/certs/
+
+# docs website
+docs/node_modules/
+docs/.vitepress/dist/
+docs/.vitepress/cache/
+docs/certs/

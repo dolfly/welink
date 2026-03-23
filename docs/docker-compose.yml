@@ -1,0 +1,21 @@
+services:
+  website:
+    build:
+      context: .
+      platforms:
+        - linux/amd64
+    image: ghcr.io/runzhliu/welink/website:main
+    container_name: welink-website
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./certs:/etc/certs:ro
+    restart: unless-stopped
+    networks:
+      - default
+      - welink-net
+
+networks:
+  welink-net:
+    external: true
