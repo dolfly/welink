@@ -123,7 +123,7 @@ _dmg-package:
 	# 移除本地构建产生的隔离属性，避免 macOS 弹出「无法打开」
 	xattr -cr "$(APP_DIR)"
 	rm -f "dist/$(DMG_NAME).dmg"
-	pip3 install --quiet --break-system-packages dmgbuild
+	pip3 install --quiet --break-system-packages dmgbuild 2>/dev/null || pip3 install --quiet dmgbuild
 	python3 -m dmgbuild -s assets/dmg-settings.py \
 		-D app="$(APP_DIR)" \
 		"$(DMG_NAME)" "dist/$(DMG_NAME).dmg"
