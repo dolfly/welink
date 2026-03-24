@@ -56,6 +56,39 @@ jobs:
           draft: ${{ steps.version.outputs.draft }}
           prerelease: ${{ steps.version.outputs.prerelease }}
           body: |
+            ## 更新内容
+
+            ### ✨ 新功能
+
+            **全局搜索增强**
+            - 全局搜索现支持**群聊记录**，可通过 pill 按钮切换「私聊 / 群聊 / 全部」范围
+            - 搜索结果点击任意消息，弹出**当天完整聊天记录**，自动定位并高亮目标消息，支持前后翻日
+            - 联系人详情和群聊详情的「搜索记录」Tab 同样支持点击查看当天上下文
+
+            **数据库 SQL 编辑器**
+            - 数据库页面新增 SQL 编辑器，可直接对底层 SQLite 数据库执行 `SELECT / PRAGMA / EXPLAIN`
+            - 支持 ⌘+Enter 快捷执行、Tab 缩进、结果一键复制（TSV 格式），最多返回 500 行
+
+            **群聊画像**
+            - 成员发言排行支持显示最多 Top 500，人数可实时修改
+            - 名字列宽度可**拖拽调整**，设置页同步保存
+
+            **Windows 支持**
+            - 新增 Windows App 版本（基于 WebView2，无需 CGO）
+
+            **官方网站**
+            - 上线 [welink.click](https://welink.click)，含完整文档和 MCP Server 使用说明
+            - 上线 [demo.welink.click](https://demo.welink.click) 在线体验
+            - 侧边栏图标点击可直接跳转官网
+
+            ### 🐛 修复
+
+            - 搜索结果点击头像正确跳转联系人资料，过滤已屏蔽用户
+            - 修复群聊详情页崩溃问题
+            - 修复旧版 pip 不支持 `--break-system-packages` 导致 `make dmg` 失败
+
+            ---
+
             ## macOS 安装方法
 
             1. 下载 `WeLink.dmg`，双击挂载
