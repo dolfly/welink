@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"path"
@@ -85,8 +86,14 @@ func webdavPut(fullURL string, body []byte, user, pass string) error {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		snippet, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
-		return fmt.Errorf("WebDAV PUT %d: %s", resp.StatusCode, strings.TrimSpace(string(snippet)))
+		snippet := strings.TrimSpace(string(func() []byte { b, _ := io.ReadAll(io.LimitReader(resp.Body, 512)); return b }()))
+		// 本地/自托管：WebDAV 是用户自己的服务，回显响应体片段有助排障。
+		// Demo 模式：不回显第三方服务响应，避免未授权用户借错误信息探测他人 WebDAV（M5）。
+		if demoModeEnabled() {
+			log.Printf("[webdav] PUT 失败 %d：%s", resp.StatusCode, snippet)
+			return fmt.Errorf("WebDAV PUT 失败（HTTP %d）", resp.StatusCode)
+		}
+		return fmt.Errorf("WebDAV PUT %d: %s", resp.StatusCode, snippet)
 	}
 	return nil
 }

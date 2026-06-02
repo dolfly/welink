@@ -9,6 +9,7 @@ package main
 //  4. 全局限速：同一 IP 每秒最多 20 个请求（防止暴力刷接口）
 
 import (
+	"errors"
 	"net"
 	"net/http"
 	"net/url"
@@ -20,7 +21,31 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// errDemoPrivateURL 在 Demo 模式下拦截指向内网的 baseURL 时返回。
+var errDemoPrivateURL = errors.New("demo 模式下不允许访问内网地址")
+
 // ── 1. 禁止写入 LLM 配置 ────────────────────────────────────────────────────
+
+// demoModeEnabled 返回是否处于 Demo 模式（DEMO_MODE=true）。
+// 与 main() 里的 isDemoMode 取同一环境变量，供 llm.go / embedding.go 等包级函数
+// 判断是否要对用户自配的 baseURL 做 SSRF 校验（本地自托管部署不限制，否则会拦掉 Ollama）。
+func demoModeEnabled() bool {
+	return os.Getenv("DEMO_MODE") == "true"
+}
+
+// guardOutboundURL 对将要由服务端发起请求的「用户可配 URL」做安全校验。
+// 仅在 Demo 模式启用：拒绝指向内网/环回的地址，防止公开 demo 被用作 SSRF 跳板
+// （探云元数据 169.254.169.254、内网服务等）。本地/自托管部署不限制——
+// 那里指向 localhost:11434(Ollama) 等私网地址是正常用法，且攻击者已在本机。
+func guardOutboundURL(rawURL string) error {
+	if !demoModeEnabled() {
+		return nil
+	}
+	if isPrivateURL(rawURL) {
+		return errDemoPrivateURL
+	}
+	return nil
+}
 
 // DemoAIDisabled 返回 Demo 模式下是否禁用 AI 配置。
 // Demo 默认不允许改 AI 配置（所有功能走预置的 mock 数据），

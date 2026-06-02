@@ -6,9 +6,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 )
+
+// maxStreamParseFails 单次流式响应允许的 chunk 解析失败次数上限。
+// 偶发一两条坏 chunk（网络分片/provider 杂讯）容忍并跳过；超过则说明流已损坏，
+// 与其静默返回残缺结果（看起来"正常完成"），不如报错让用户重试（H3）。
+const maxStreamParseFails = 5
 
 // ─── 公共类型 ──────────────────────────────────────────────────────────────────
 
@@ -379,6 +385,10 @@ func testLLMConnProfile(profileID string, prefs Preferences) (string, error) {
 
 // dispatchLLMStream 统一流式分发
 func dispatchLLMStream(send func(StreamChunk), msgs []LLMMessage, cfg llmConfig) error {
+	// Demo 模式下拒绝指向内网的 baseURL，防 SSRF（M2/L4）；本地部署不限制（Ollama 等走 localhost）
+	if err := guardOutboundURL(cfg.baseURL); err != nil {
+		return err
+	}
 	t := startTimer("llm_stream")
 	var err error
 	switch cfg.provider {
@@ -468,6 +478,7 @@ func streamOpenAICompat(send func(StreamChunk), msgs []LLMMessage, cfg llmConfig
 	// 用于检测 <think>...</think> 标签（MiniMax / DeepSeek-R1 等思考模型）
 	inThinkTag := false
 	thinkBuf := ""
+	parseFails := 0 // 累计 chunk 解析失败数，超阈值即中止，避免静默丢数据（H3）
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -487,6 +498,11 @@ func streamOpenAICompat(send func(StreamChunk), msgs []LLMMessage, cfg llmConfig
 			} `json:"choices"`
 		}
 		if err := json.Unmarshal([]byte(payload), &chunk); err != nil {
+			parseFails++
+			log.Printf("[llm] OpenAI 兼容流 chunk 解析失败(%d)：%v；payload=%q", parseFails, err, truncate(payload, 200))
+			if parseFails > maxStreamParseFails {
+				return fmt.Errorf("响应流多次解析失败（%d 次），结果可能不完整，请重试", parseFails)
+			}
 			continue
 		}
 		if len(chunk.Choices) > 0 {
@@ -622,6 +638,7 @@ func streamClaude(send func(StreamChunk), msgs []LLMMessage, cfg llmConfig) erro
 	}
 
 	scanner := bufio.NewScanner(resp.Body)
+	parseFails := 0 // 累计解析失败数，超阈值即中止（H3）
 	for scanner.Scan() {
 		line := scanner.Text()
 		if !strings.HasPrefix(line, "data: ") {
@@ -637,6 +654,11 @@ func streamClaude(send func(StreamChunk), msgs []LLMMessage, cfg llmConfig) erro
 			} `json:"delta"`
 		}
 		if err := json.Unmarshal([]byte(payload), &event); err != nil {
+			parseFails++
+			log.Printf("[llm] Claude 流事件解析失败(%d)：%v；payload=%q", parseFails, err, truncate(payload, 200))
+			if parseFails > maxStreamParseFails {
+				return fmt.Errorf("响应流多次解析失败（%d 次），结果可能不完整，请重试", parseFails)
+			}
 			continue
 		}
 		if event.Type != "content_block_delta" {
@@ -677,6 +699,10 @@ func CompleteLLM(msgs []LLMMessage, prefs Preferences) (string, error) {
 		model:    prefs.LLMModel,
 	}
 	defaultsFor(&cfg)
+	// Demo 模式下拒绝内网 baseURL，防 SSRF（M2/L4）
+	if err := guardOutboundURL(cfg.baseURL); err != nil {
+		return "", err
+	}
 	t := startTimer("llm_complete")
 	var (
 		out string

@@ -385,7 +385,8 @@ func sizeToAspectRatio(size string) string {
 }
 
 // geminiGenerateImage 走 Generative Language API 的 :predict 端点。
-// 走 ?key= 鉴权（与 LLM 那边 Gemini OAuth 走的端点不同，走 OAuth 时需要单独适配）。
+// API key 鉴权（与 LLM 那边 Gemini OAuth 走的端点不同，走 OAuth 时需要单独适配），
+// key 放在 x-goog-api-key 头里，不进 URL。
 func geminiGenerateImage(prompt, size string, cfg ImageConfig) ([]byte, error) {
 	if cfg.APIKey == "" {
 		return nil, fmt.Errorf("未配置生图 API Key")
@@ -401,12 +402,14 @@ func geminiGenerateImage(prompt, size string, cfg ImageConfig) ([]byte, error) {
 		Instances:  []geminiImagenInstance{{Prompt: prompt}},
 		Parameters: geminiImagenParameters{SampleCount: 1, AspectRatio: sizeToAspectRatio(size)},
 	})
-	url := fmt.Sprintf("%s/models/%s:predict?key=%s", cfg.BaseURL, cfg.Model, cfg.APIKey)
+	// API key 放在 x-goog-api-key 头而非 URL query，避免 key 进访问日志 / referrer / 浏览器历史（M4）
+	url := fmt.Sprintf("%s/models/%s:predict", cfg.BaseURL, cfg.Model)
 	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-goog-api-key", cfg.APIKey)
 
 	resp, err := httpClientLLMSync.Do(req)
 	if err != nil {

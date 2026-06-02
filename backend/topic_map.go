@@ -21,6 +21,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"sort"
 	"strings"
@@ -117,12 +118,17 @@ func topicMapHandler(getSvc func() *service.ContactService) gin.HandlerFunc {
 			profPrefs.LLMModel = cfg.model
 		}
 
+		// 联系人名匿名化后再送 LLM（M7），拿到结果用 reverse 还原
+		alias, reverse := tmContactAlias(corpus)
+
 		raw, err := CompleteLLM([]LLMMessage{
 			{Role: "system", Content: tmSystemPrompt},
-			{Role: "user", Content: tmBuildUserPrompt(corpus)},
+			{Role: "user", Content: tmBuildUserPrompt(corpus, alias)},
 		}, profPrefs)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "LLM 调用失败：" + err.Error()})
+			// 不回显原始 err（含 provider 响应体片段），仅服务端日志（M6）
+			log.Printf("[topic-map] LLM 调用失败：%v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "LLM 调用失败，请稍后重试或检查 AI 配置"})
 			return
 		}
 
@@ -131,19 +137,18 @@ func topicMapHandler(getSvc func() *service.ContactService) gin.HandlerFunc {
 			Themes []TMTheme `json:"themes"`
 		}
 		if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "LLM 返回格式异常：" + err.Error(),
-				"raw":   raw,
-			})
+			// 不把 raw（含化名/高频词）和原始 err 回前端，仅记服务端日志（M6）
+			log.Printf("[topic-map] LLM 返回 JSON 解析失败：%v；raw=%q", err, raw)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "AI 返回格式异常，请重试"})
 			return
 		}
 		if len(parsed.Themes) == 0 {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "LLM 没聚出任何主题"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "AI 没聚出任何主题，请重试"})
 			return
 		}
 
 		resp := &TMResponse{
-			Themes:          tmNormalize(parsed.Themes),
+			Themes:          tmNormalize(parsed.Themes, reverse),
 			ScannedContacts: corpus.ScannedContacts,
 			TotalContacts:   corpus.TotalContacts,
 			WordsAnalyzed:   len(corpus.Words),
@@ -174,23 +179,57 @@ const tmSystemPrompt = `你是一个聊天数据分析助手。用户会给你�
 严格只输出 JSON，不要任何解释文字、不要 markdown 代码块：
 {"themes":[{"emoji":"📚","name":"考研冲刺","percent":22,"keywords":["真题","背单词","报名"],"top_contacts":["小王","老张"],"blurb":"你和小王今年的命运共同体就是这场考试"}]}`
 
-// tmBuildUserPrompt 把 corpus 拼成给 LLM 的输入文本。
-func tmBuildUserPrompt(corpus *service.TopicCorpus) string {
+// tmContactAlias 为 corpus 里出现的真实联系人名建立"真名 → 化名（联系人1/2…）"映射。
+// 隐私（M7）：联系人显示名是社交关系元数据，不应原样发往第三方 LLM。
+// 发送前替换成化名，拿到结果后再用 reverse 还原成真名给前端展示。
+// 返回 alias(真名→化名) 与 reverse(化名→真名) 两张表；按"首次出现顺序"编号，保证确定性。
+func tmContactAlias(corpus *service.TopicCorpus) (alias, reverse map[string]string) {
+	alias = map[string]string{}
+	reverse = map[string]string{}
+	n := 0
+	for _, w := range corpus.Words {
+		for _, name := range w.TopContacts {
+			if name == "" {
+				continue
+			}
+			if _, ok := alias[name]; ok {
+				continue
+			}
+			n++
+			a := fmt.Sprintf("联系人%d", n)
+			alias[name] = a
+			reverse[a] = name
+		}
+	}
+	return alias, reverse
+}
+
+// tmBuildUserPrompt 把 corpus 拼成给 LLM 的输入文本；联系人名以 alias 替换为化名。
+func tmBuildUserPrompt(corpus *service.TopicCorpus, alias map[string]string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "以下是从我的微信聊天里抽出的 %d 个高频词（已扫描 %d 个私聊），格式：词｜词频｜主要和谁聊。\n请据此聚类成话题。\n\n",
 		len(corpus.Words), corpus.ScannedContacts)
 	for _, w := range corpus.Words {
-		who := strings.Join(w.TopContacts, "、")
-		if who == "" {
-			who = "—"
+		who := "—"
+		if len(w.TopContacts) > 0 {
+			aliased := make([]string, 0, len(w.TopContacts))
+			for _, name := range w.TopContacts {
+				if a, ok := alias[name]; ok {
+					aliased = append(aliased, a)
+				}
+			}
+			if len(aliased) > 0 {
+				who = strings.Join(aliased, "、")
+			}
 		}
 		fmt.Fprintf(&b, "%s｜%d｜%s\n", w.Word, w.Count, who)
 	}
 	return b.String()
 }
 
-// tmNormalize 修正 LLM 输出：裁剪字段长度、夹紧 percent、按占比降序。
-func tmNormalize(themes []TMTheme) []TMTheme {
+// tmNormalize 修正 LLM 输出：裁剪字段长度、夹紧 percent、按占比降序，
+// 并用 reverse（化名→真名）把 top_contacts 还原成真实联系人名给前端展示（M7）。
+func tmNormalize(themes []TMTheme, reverse map[string]string) []TMTheme {
 	out := make([]TMTheme, 0, len(themes))
 	for _, t := range themes {
 		if strings.TrimSpace(t.Name) == "" {
@@ -207,6 +246,12 @@ func tmNormalize(themes []TMTheme) []TMTheme {
 		}
 		if len(t.TopContacts) > 3 {
 			t.TopContacts = t.TopContacts[:3]
+		}
+		// 化名 → 真名；LLM 万一返回未知名（幻觉）则原样保留
+		for i, name := range t.TopContacts {
+			if real, ok := reverse[name]; ok {
+				t.TopContacts[i] = real
+			}
 		}
 		if t.Emoji == "" {
 			t.Emoji = "💬"

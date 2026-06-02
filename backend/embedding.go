@@ -82,6 +82,10 @@ func GetEmbeddingsBatch(texts []string, cfg EmbeddingConfig) ([][]float32, error
 		}
 		return out, nil
 	}
+	// Demo 模式下拒绝内网 baseURL，防 SSRF（M2/L4）；本地部署不限制（Ollama 走 localhost）
+	if err := guardOutboundURL(cfg.BaseURL); err != nil {
+		return nil, err
+	}
 	t := startTimer("embed_batch")
 	var (
 		vecs [][]float32

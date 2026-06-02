@@ -102,7 +102,13 @@ func geminiValidToken(prefs *Preferences) (string, error) {
 	}
 	prefs.GeminiAccessToken = newToken
 	prefs.GeminiTokenExpiry = newExpiry.Unix()
-	_ = savePreferences(*prefs) // best-effort 持久化
+	// 只把刷新出来的 token 持久化，且走 updatePreferences 在锁下做"读最新→改→原子写"，
+	// 避免直接 savePreferences(*prefs) 用这份可能已过期的内存副本整体覆盖、冲掉用户同时在
+	// 设置页做的其它修改（H1）。
+	_, _ = updatePreferences(func(p *Preferences) {
+		p.GeminiAccessToken = newToken
+		p.GeminiTokenExpiry = newExpiry.Unix()
+	})
 	return newToken, nil
 }
 

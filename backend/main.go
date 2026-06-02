@@ -612,15 +612,10 @@ func serverMain() {
 		}
 		defer zf.Close()
 
-		// 收集需要脱敏的 API Key（防止日志中泄露）
-		var sensitiveKeys []string
-		if pref.LLMAPIKey != "" { sensitiveKeys = append(sensitiveKeys, pref.LLMAPIKey) }
-		if pref.GeminiAccessToken != "" { sensitiveKeys = append(sensitiveKeys, pref.GeminiAccessToken) }
-		if pref.GeminiRefreshToken != "" { sensitiveKeys = append(sensitiveKeys, pref.GeminiRefreshToken) }
-		if pref.EmbeddingAPIKey != "" { sensitiveKeys = append(sensitiveKeys, pref.EmbeddingAPIKey) }
-		for _, p := range pref.LLMProfiles {
-			if p.APIKey != "" { sensitiveKeys = append(sensitiveKeys, p.APIKey) }
-		}
+		// 收集需要脱敏的全部凭据（API key / OAuth token / 密码 / PIN），防止日志中泄露。
+		// 用 collectSecrets 统一口径，避免像原来只手写 5 类、漏掉
+		// Notion/Feishu/WebDAV/S3/Dropbox/GDrive/OneDrive/Image 等凭据（M1）。
+		sensitiveKeys := collectSecrets(pref)
 
 		// 只打包 WeLink 自己的日志文件，不包含目录下的其他无关日志
 		welinkLogFiles := []string{"welink.log", "frontend.log"}

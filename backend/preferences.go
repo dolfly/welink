@@ -7,7 +7,14 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 )
+
+// prefsMu 串行化所有 preferences 的"读-改-写"。
+// preferences.json 是个 60+ 字段的大结构（含全部 OAuth token / API key），
+// 多个 handler + 后台 token 刷新会并发改它；没有锁的话 last-write-wins 会丢凭据，
+// 配合非原子写还可能写坏文件。所有走 updatePreferences() 的修改都在这把锁下进行。
+var prefsMu sync.Mutex
 
 // resolveDownloadDir 返回当前应该写入导出文件的目录：
 //   1. 用户在设置里配置的 DownloadDir（存在且可写）
@@ -302,8 +309,15 @@ func loadPreferences() Preferences {
 	migrated := migratePreferences(p)
 	if migrated.SchemaVersion != p.SchemaVersion {
 		log.Printf("[PREFS] schema v%d → v%d 迁移完成", p.SchemaVersion, migrated.SchemaVersion)
-		if err := savePreferences(migrated); err != nil {
-			log.Printf("[PREFS] 迁移后写回失败，不影响运行：%v", err)
+		// 用 TryLock 区分两种调用上下文，避免重入死锁：
+		//   - 锁空闲：是普通 loadPreferences 调用，拿到锁直接写回。
+		//   - 锁已被持有：说明正处在 updatePreferences 内（loadPreferences 是它的一步），
+		//     无需在此写回——调用方的 savePreferencesLocked 会把 migrated 一起持久化。
+		if prefsMu.TryLock() {
+			if err := savePreferencesLocked(migrated); err != nil {
+				log.Printf("[PREFS] 迁移后写回失败，不影响运行：%v", err)
+			}
+			prefsMu.Unlock()
 		}
 	}
 	return migrated
@@ -379,6 +393,41 @@ func sanitizeForExport(p Preferences, stripSecrets bool) Preferences {
 	p.MobilePairingToken = ""
 
 	return p
+}
+
+// collectSecrets 收集 Preferences 里所有非空的敏感值（API key / OAuth token / 密码 / PIN hash），
+// 用于日志脱敏等场景——把这些值在导出文本里替换成 [REDACTED]。
+// 字段清单与 sanitizeForExport 保持一致：新增凭据字段时两处都要补，避免日志里漏脱敏。
+func collectSecrets(p Preferences) []string {
+	candidates := []string{
+		p.LLMAPIKey,
+		p.EmbeddingAPIKey,
+		p.ImageAPIKey,
+		p.PodcastTTSAPIKey,
+		p.NotionToken,
+		p.FeishuAppSecret,
+		p.WebDAVPassword,
+		p.S3SecretKey,
+		p.DropboxToken,
+		p.GDriveClientSecret, p.GDriveAccessToken, p.GDriveRefreshToken,
+		p.OneDriveClientSecret, p.OneDriveAccessToken, p.OneDriveRefreshToken,
+		p.GeminiClientSecret, p.GeminiAccessToken, p.GeminiRefreshToken,
+		p.MobilePairingToken,
+		p.LockPinHash,
+	}
+	for _, prof := range p.LLMProfiles {
+		candidates = append(candidates, prof.APIKey)
+	}
+	for _, prof := range p.ImageProfiles {
+		candidates = append(candidates, prof.APIKey)
+	}
+	out := make([]string, 0, len(candidates))
+	for _, s := range candidates {
+		if s != "" {
+			out = append(out, s)
+		}
+	}
+	return out
 }
 
 // mergeImported 导入新配置时的合并策略：
@@ -510,14 +559,65 @@ func sanitizeForResponse(p Preferences) Preferences {
 }
 
 // savePreferences 将偏好写入磁盘。
+// savePreferences 原子写入 preferences.json：先写同目录临时文件并 fsync，
+// 再 rename 覆盖。避免 os.WriteFile 的 O_TRUNC 在写到一半崩溃时留下损坏的空/截断文件
+// （那会让 loadPreferences 回退默认值，丢失全部配置与凭据）。
 func savePreferences(p Preferences) error {
+	// 持锁保证任意时刻只有一个写者，配合下面的原子 rename，杜绝并发写互相截断/写坏文件。
+	// updatePreferences 已持有 prefsMu，会走 savePreferencesLocked 避免重入死锁。
+	prefsMu.Lock()
+	defer prefsMu.Unlock()
+	return savePreferencesLocked(p)
+}
+
+// savePreferencesLocked 是 savePreferences 的实现体，调用方必须已持有 prefsMu。
+func savePreferencesLocked(p Preferences) error {
 	path := preferencesPath()
-	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0700); err != nil {
 		return err
 	}
 	data, err := json.MarshalIndent(p, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0600)
+
+	tmp, err := os.CreateTemp(dir, ".preferences-*.tmp")
+	if err != nil {
+		return err
+	}
+	tmpName := tmp.Name()
+	// 失败路径上清理临时文件；成功 rename 后 tmpName 已不存在，Remove 无害。
+	defer os.Remove(tmpName)
+
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Sync(); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	if err := os.Chmod(tmpName, 0600); err != nil {
+		return err
+	}
+	return os.Rename(tmpName, path)
+}
+
+// updatePreferences 在 prefsMu 锁下做一次完整的"读最新 → 修改 → 原子写"。
+// 所有需要改 preferences 的地方都应走这里，而不是各自 load→改→save，
+// 否则并发修改会互相覆盖（典型：用户在设置页改配置时，后台 OAuth token 刷新写盘）。
+// mutate 在持锁期间被调用，拿到当前磁盘上的最新副本，原地修改即可。
+func updatePreferences(mutate func(p *Preferences)) (Preferences, error) {
+	prefsMu.Lock()
+	defer prefsMu.Unlock()
+	p := loadPreferences()
+	mutate(&p)
+	if err := savePreferencesLocked(p); err != nil {
+		return p, err
+	}
+	return p, nil
 }
