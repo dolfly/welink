@@ -1,19 +1,58 @@
 # WeLink 技术文档
 
-本目录存放 WeLink 项目的技术说明文档。
+本目录是 [welink.click](https://welink.click) 官网文档的源文件（VitePress 构建）。下面按类别列出全部文档，完整导航见官网侧边栏。
 
-
-## 文档列表
+## 上手与安装
 
 | 文件 | 内容 |
 |------|------|
-| [api.md](./api.md) | 后端 REST API 接口文档，包含所有端点的参数、响应格式和字段说明 |
-| [database.md](./database.md) | 数据库结构说明，包含 contact.db / message_N.db 表结构、消息类型、发送者识别机制 |
-| [indexing.md](./indexing.md) | 索引与初始化流程，包含 SQLite 索引策略、并发模型、时间过滤机制 |
-| [sentiment.md](./sentiment.md) | 情感分析算法说明，包含词典内容、评分流程、月度聚合逻辑 |
-| [wordcloud.md](./wordcloud.md) | 词云生成说明，包含分词流程、停用词表、字号对数映射、WordCloud2 渲染参数 |
-| [ai-analysis.md](./ai-analysis.md) | AI 分析功能说明，包含 LLM 配置、Embedding 配置、全量分析、混合检索（FTS5 + 向量 + 记忆提炼）、Gemini OAuth、API 端点 |
-| [ollama-setup.md](./ollama-setup.md) | Ollama 本地 AI 配置指南，包含安装、模型拉取、WeLink 接入、Docker 网络配置、常见问题 |
+| [install.md](./install.md) | 安装总览（macOS App / Windows App / Docker 三种方式选择） |
+| [install-macos.md](./install-macos.md) | macOS App 安装与配置（路径 / 端口 / 升级 / 多 profile / FAQ） |
+| [install-windows.md](./install-windows.md) | Windows App 安装与配置 |
+| [docker.md](./docker.md) | Docker Compose 部署指南 |
+| [faq.md](./faq.md) | 常见问题 |
+| [ux.md](./ux.md) | 使用技巧与快捷键 |
+
+## 功能说明
+
+| 文件 | 内容 |
+|------|------|
+| [features.md](./features.md) | 功能总览 |
+| [labs.md](./labs.md) | 创意实验室（21 个 Lab）逐个说明 |
+| [ai-clone.md](./ai-clone.md) | AI 分身学习与对话 |
+| [ai-analysis.md](./ai-analysis.md) | AI 分析：LLM/Embedding 配置、全量分析、混合检索（FTS5 + 向量 + 记忆提炼）、Gemini OAuth |
+| [ai-group-sim.md](./ai-group-sim.md) | AI 群聊模拟 |
+| [cross-contact-qa.md](./cross-contact-qa.md) | 跨联系人 AI 问答 |
+| [podcast.md](./podcast.md) | 播客与 TTS |
+| [skill-forge.md](./skill-forge.md) | Skill 炼化格式与实现 |
+
+## 技术细节
+
+| 文件 | 内容 |
+|------|------|
+| [architecture.md](./architecture.md) | 整体架构与分层职责 |
+| [api.md](./api.md) | 后端 REST API 接口文档，端点参数 / 响应格式 / 字段说明 |
+| [database.md](./database.md) | 数据库结构（contact.db / message_N.db 表结构、消息类型、发送者识别） |
+| [indexing.md](./indexing.md) | 索引与初始化流程（SQLite 索引策略、并发模型、时间过滤） |
+| [message-types.md](./message-types.md) | 微信消息类型详解 |
+| [sentiment.md](./sentiment.md) | 情感分析算法（词典 / 评分流程 / 月度聚合） |
+| [wordcloud.md](./wordcloud.md) | 词云生成（分词 / 停用词 / 字号映射 / 渲染参数） |
+
+## AI 接入与集成
+
+| 文件 | 内容 |
+|------|------|
+| [ollama-setup.md](./ollama-setup.md) | Ollama 本地 AI 配置（安装 / 拉模型 / 接入 / Docker 网络） |
+| [chatgpt-gpt.md](./chatgpt-gpt.md) | ChatGPT Custom GPT 配置 |
+| [mcp-server.md](./mcp-server.md) | MCP Server（Claude Code 等集成） |
+| [mcp-clients.md](./mcp-clients.md) | MCP 客户端接入 |
+
+## 贡献
+
+| 文件 | 内容 |
+|------|------|
+| [contribute.md](./contribute.md) | 贡献指南 |
+| [development.md](./development.md) | 本地开发环境 |
 
 
 ## 快速参考

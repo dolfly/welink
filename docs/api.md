@@ -133,6 +133,10 @@
 
 指定联系人某月的聊天记录。
 
+### `GET /api/contacts/active-dates?username=wxid`
+
+返回该联系人所有「有聊天记录的日期」列表，供微信视图按天浏览用。响应 `{ "dates": ["2024-01-15", ...] }`。静态库长期缓存。
+
 ### `GET /api/contacts/search?username=wxid&q=关键词`
 
 搜索指定联系人的消息记录（最多 200 条）。
@@ -247,8 +251,6 @@ AI 关系摘要（低 token 统计预处理，给 `/ai/analyze` 打底）。
 ### `GET /api/groups/year-review?username=xxx@chatroom&year=2025&profile_id=`
 
 AI 群聊年度回顾（Spotify Wrapped 风格）。扫该年所有消息算：Top 3 发言成员 / 最忙一天 / 高频词 Top 3 / 月度消息量；调 LLM 生成 3 条原文金句 + 60-100 字年度叙事。
-
-群聊人物关系图（成员节点 + 交互边，含回复和提及权重）。
 
 
 ## 有趣发现
@@ -994,6 +996,48 @@ AI 对话续写 — AI 模拟双方继续聊天（SSE 流式）。
 }
 ```
 
+### `GET /api/labs/reply-speed[?refresh=1]`
+
+回复速度榜。对每个私聊算双向回复延迟的中位数（只统计 6 小时内的回复），三视角排行。`POST` 同接口强制重算。
+
+**纯统计，无 LLM**，30 分钟缓存。响应字段见 `backend/reply_speed.go` 的 `RSResponse`：
+
+```json
+{
+  "scanned_contacts": 120,
+  "they_reply_fast": [{ "username": "...", "display_name": "TA", "my_median_sec": 300, "their_median_sec": 45, "gap_sec": 255 }],
+  "you_reply_fast": [],
+  "most_uneven": [],
+  "generated_at": 1733000000
+}
+```
+
+`*_median_sec` 为 `-1` 表示样本不足；`they_reply_fast`=谁秒回你 / `you_reply_fast`=你秒回谁 / `most_uneven`=最不对等。
+
+### `GET /api/labs/flirt-probe[?refresh=1]`
+
+暧昧探测。扫私聊里 5 类暧昧信号（亲昵称呼 / 想念 / 深夜亲密 / 暧昧动作 / 暧昧表情），按"暧昧浓度"排行。`POST` 同接口强制重算。可在「用户偏好」用 `PUT /api/preferences/flirt-excluded` 排除伴侣/家人。
+
+**纯统计，无 LLM**，30 分钟缓存。响应字段见 `backend/flirt_probe.go` 的 `FPResponse`（节选）：
+
+```json
+{
+  "scanned_contacts": 120,
+  "total_contacts_with_hits": 8,
+  "total_hits": 240,
+  "excluded_usernames": ["wxid_partner"],
+  "rows": [{ "username": "...", "display_name": "TA", "total_hits": 60, "mutual_score": 0.8 }]
+}
+```
+
+`mutual_score` 0~1，越接近 1 越双向。
+
+### `GET /api/labs/health-log[?refresh=1]`
+
+健康日记。扫聊天里"感冒/发烧/医院/吃药……"提及，7 天合并成一次发作，看「我」vs「TA 们」谁更常生病。`POST` 同接口强制重算。
+
+**纯统计，无 LLM**，30 分钟缓存。响应字段见 `backend/health_log.go`：每个联系人含 `my_episodes`（我在 TA 面前提到生病）/ `their_episodes`（TA 跟我说 TA 生病）/ `last_episode_who`（`me`/`them`），另有按月聚合的时间线。
+
 
 ## 断联预警 / 反向语义搜索
 
@@ -1410,6 +1454,43 @@ AI 画廊列表。每张成功生成的图自动入库（`images` 表 + `images_
 ```
 
 
+## 播客（Podcast / TTS）
+
+把一段聊天对话转成播客音频。功能说明见 [播客与 TTS](./podcast)。
+
+### `GET /api/podcast/config`
+
+获取播客 / TTS 配置（provider、voice、API key 占位等）。
+
+### `PUT /api/podcast/config`
+
+保存播客 / TTS 配置。API key 走脱敏占位符 `__HAS_KEY__`，保存后不返回明文。
+
+### `GET /api/podcast/summary-preview`
+
+预览将用于生成脚本的对话摘要（不调 LLM 写稿，仅汇总素材）。
+
+### `POST /api/podcast/generate-script`
+
+调 LLM 把选定对话生成播客脚本（双人对谈式）。
+
+### `GET /api/podcast/scripts`
+
+历史播客脚本列表。
+
+### `GET /api/podcast/scripts/:id`
+
+单条脚本详情。
+
+### `DELETE /api/podcast/scripts/:id`
+
+删除一条脚本（删除前生成 `.bak` 备份）。
+
+### `POST /api/podcast/tts`
+
+把脚本逐句送 TTS 合成音频。
+
+
 ## RAG 检索
 
 ### `GET /api/ai/rag/index-status?key=contact:wxid`
@@ -1642,6 +1723,10 @@ AI 分身 Tab 的多轮对话独立持久化（区别于 `/api/ai/conversations`
 ### `PUT /api/preferences/forecast-ignored`
 
 关系预测「不再推荐此人」名单保存。请求体 `{ "forecast_ignored": ["wxid1", "wxid2"] }`。
+
+### `PUT /api/preferences/flirt-excluded`
+
+暧昧探测排除名单保存（把伴侣 / 家人等排除出榜）。请求体 `{ "flirt_excluded": ["wxid1", "wxid2"] }`，对应实验室「暧昧探测」Lab 的过滤。
 
 ### `PUT /api/preferences/prompts`
 
