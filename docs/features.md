@@ -37,7 +37,7 @@ description: WeLink 的完整功能清单 —— AI 能力 / 数据分析 / 关�
 <div class="feat-card"><div class="icon">🎮</div><h4>互动小说（VN）</h4><p>把联系人变成 NPC，写一段章节化、有选项、5 种结局的视觉小说。3 种模式（自由 / 带目标 / 回忆改编）+ Wrapped 风格通关回顾 + 本剧亲密度 vs 真实关系热度对比 + 长图导出。</p></div>
 <div class="feat-card"><div class="icon">👥</div><h4>AI 群聊模拟</h4><p>AI 按群友发言比例和风格模拟群聊，你也可以随时加入。支持自定义话题、氛围和参与成员。</p></div>
 <div class="feat-card"><div class="icon">🎭</div><h4><a href="./labs#_13-ai-虚拟群聊（v0-2-x-新增）">AI 虚拟群聊</a></h4><p>挑 2-8 个联系人组虚拟群，AI 用每个人的"分身画像"扮演。这些人现实中可能从没在同群说过话，让你看看他们认识会聊什么。</p></div>
-<div class="feat-card"><div class="icon">🧪</div><h4><a href="./labs">创意实验室（18 个 Lab）</a></h4><p>聊天 DNA / 高光瞬间 / 灵魂提问 / 平行宇宙 / 关系星图 / 群金句榜 / 语言进化史 / 聊天地图 / 人情债 / 断联预警 / 关系考古 / 健康日记 / 暧昧探测 / 回复速度榜 …… 像 Spotify Wrapped 一键分享。</p></div>
+<div class="feat-card"><div class="icon">🧪</div><h4><a href="./labs">创意实验室（21 个 Lab）</a></h4><p>聊天 DNA / 高光瞬间 / 灵魂提问 / 平行宇宙 / 关系星图 / 群金句榜 / 语言进化史 / 聊天地图 / 人情债 / 断联预警 / 关系考古 / 健康日记 / 暧昧探测 / 回复速度榜 / 主动指数榜 / 社交圈流动榜 / 话题图谱 …… 像 Spotify Wrapped 一键分享。</p></div>
 <div class="feat-card"><div class="icon">🌐</div><h4>跨联系人 AI 问答</h4><p>问「谁聊过旅行」「去年国庆和谁聊天了」，AI 自动搜索所有记录并汇总回答。Agent 模式。</p></div>
 <div class="feat-card"><div class="icon">📝</div><h4>AI 洞察</h4><p>一键生成关系报告、性格画像卡、AI 日记。基于统计摘要+采样，每次约 5k token。</p></div>
 <div class="feat-card"><div class="icon">🤖</div><h4>AI 对话分析</h4><p>针对任意联系人或群聊直接提问，AI 读完聊天记录再回答，不是搜索框。</p></div>

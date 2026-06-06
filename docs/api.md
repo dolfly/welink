@@ -678,7 +678,7 @@ AI 对话续写 — AI 模拟双方继续聊天（SSE 流式）。
 
 ## 创意实验室（Labs）
 
-侧边栏「实验室」Tab 下的 5 个分享类小工具。详见 [创意实验室](./labs)。
+侧边栏「实验室」Tab 下的各项创意小工具（共 21 个，下列核心接口，其余散见「断联预警 / 反向语义搜索」「群聊 Wrapped / 里程碑」等章节）。完整列表见 [创意实验室](./labs)。
 
 ### `GET /api/me/dna`
 
@@ -930,6 +930,69 @@ AI 对话续写 — AI 模拟双方继续聊天（SSE 流式）。
 ```
 
 `weight` 表示两个联系人共同所在的群数。前端自跑迷你 force layout 渲染，无 d3-force 依赖。
+
+
+### `GET /api/labs/initiative[?refresh=1]`
+
+主动指数榜。看每段对话是谁先开口的：距上一条消息超过 4 小时算开启新对话，第一条是谁发的就记谁一次"主动开场"。三视角排行。
+
+**纯统计，无 LLM**，30 分钟缓存。响应字段见 `backend/initiative.go` 的 `INResponse`：
+
+```json
+{
+  "scanned_contacts": 120,
+  "you_initiate":  [{ "username": "...", "display_name": "TA", "my_opens": 40, "their_opens": 8, "total_sessions": 50, "my_ratio": 0.8 }],
+  "they_initiate": [],
+  "most_uneven":   [],
+  "generated_at": 1733000000
+}
+```
+
+`you_initiate`=你开场占比最高（你总先开口）；`they_initiate`=TA 开场占比最高；`most_uneven`=开场占比离 50% 最远。
+
+### `GET /api/labs/social-flow[?refresh=1]`
+
+社交圈年度流动榜。对比每个私聊「今年 12 个月」与「去年同期」两个滑动窗口的消息量，给每人贴流动标签。
+
+**纯统计，无 LLM**，30 分钟缓存。响应字段见 `backend/social_flow.go` 的 `SFResponse`：
+
+```json
+{
+  "scanned_contacts": 80,
+  "anchor_month": "2026-05",
+  "newcomers": [{ "username": "...", "display_name": "小王", "this_year": 432, "last_year": 10, "change_pct": 999, "flow": "newcomer" }],
+  "faded": [],
+  "revived": [],
+  "all": [],
+  "generated_at": 1733000000
+}
+```
+
+`flow` 取值：`newcomer`(新晋核心) / `faded`(悄然淡出) / `revived`(逆袭回归) / `warming`(稳步升温) / `steady`(稳定常驻)。
+
+### `POST /api/labs/topic-map`
+
+话题图谱。本地抽高频词 → LLM 聚成 5-8 个有名字 + emoji 的主题，并标注每个主题最常聊的人。**只把"词表 + 词频"送入你配置的 LLM，聊天原文与联系人真实名都不出本机**（联系人名先匿名化为「联系人N」，结果再回填真名）。
+
+**请求体**（均可选）：
+
+```json
+{ "profile_id": "", "refresh": false }
+```
+
+按 profile 缓存 30 分钟。响应字段见 `backend/topic_map.go` 的 `TMResponse`：
+
+```json
+{
+  "themes": [
+    { "emoji": "📚", "name": "考研冲刺", "percent": 22, "keywords": ["真题","报名"], "top_contacts": ["小王"], "blurb": "你和小王今年的命运共同体" }
+  ],
+  "scanned_contacts": 60,
+  "total_contacts": 80,
+  "words_analyzed": 150,
+  "generated_at": 1733000000
+}
+```
 
 
 ## 断联预警 / 反向语义搜索
