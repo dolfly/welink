@@ -103,73 +103,77 @@ func defaultsFor(p *llmConfig) {
 			p.baseURL = "https://api.moonshot.cn/v1"
 		}
 		if p.model == "" {
-			p.model = "kimi-k2.5"
+			p.model = "kimi-k2.6"
 		}
 	case "gemini":
 		if p.baseURL == "" {
 			p.baseURL = "https://generativelanguage.googleapis.com/v1beta/openai"
 		}
 		if p.model == "" {
-			p.model = "gemini-2.0-flash"
+			// gemini-2.0-flash 已于 2026-06-01 关停（NOT_FOUND）；用稳定 GA 的 3.5-flash
+			p.model = "gemini-3.5-flash"
 		}
 	case "glm":
 		if p.baseURL == "" {
 			p.baseURL = "https://open.bigmodel.cn/api/paas/v4"
 		}
 		if p.model == "" {
-			p.model = "glm-4-flash"
+			p.model = "glm-5.1"
 		}
 	case "grok":
 		if p.baseURL == "" {
 			p.baseURL = "https://api.x.ai/v1"
 		}
 		if p.model == "" {
-			p.model = "grok-3-mini"
+			p.model = "grok-4.3"
 		}
 	case "minimax":
 		if p.baseURL == "" {
 			p.baseURL = "https://api.minimax.io/v1"
 		}
 		if p.model == "" {
-			p.model = "MiniMax-Text-01"
+			p.model = "MiniMax-M3"
 		}
 	case "minimax-cn":
 		if p.baseURL == "" {
 			p.baseURL = "https://api.minimaxi.com/v1"
 		}
 		if p.model == "" {
-			p.model = "MiniMax-Text-01"
+			p.model = "MiniMax-M3"
 		}
 	case "openai":
 		if p.baseURL == "" {
 			p.baseURL = "https://api.openai.com/v1"
 		}
 		if p.model == "" {
-			p.model = "gpt-4o-mini"
+			p.model = "gpt-5.5"
 		}
 	case "ollama":
 		if p.baseURL == "" {
 			p.baseURL = "http://localhost:11434/v1"
 		}
 		if p.model == "" {
-			p.model = "llama3"
+			// Ollama 是本地模型，需用户先 ollama pull；给个较新的常见默认
+			p.model = "llama3.3"
 		}
 	case "claude":
 		// Claude 使用原生 API，不需要 baseURL
 		if p.model == "" {
-			p.model = "claude-haiku-4-5-20251001"
+			// 旗舰 Opus 4.8；4.6 代起 id 改为无日期后缀格式，本身即 pinned 快照
+			p.model = "claude-opus-4-8"
 		}
 	case "bedrock":
 		if p.baseURL == "" {
 			p.baseURL = "https://bedrock-runtime.us-east-1.amazonaws.com"
 		}
 		if p.model == "" {
-			p.model = "us.anthropic.claude-sonnet-4-6"
+			p.model = "us.anthropic.claude-opus-4-8"
 		}
 	case "vertex":
 		// BaseURL 由用户填写完整端点，model 给个默认
 		if p.model == "" {
-			p.model = "google/gemini-2.0-flash-001"
+			// gemini-2.0-flash-001 已于 2026-06-01 关停；用稳定 GA 的 3.5-flash
+			p.model = "google/gemini-3.5-flash"
 		}
 	case "qwen":
 		// 阿里通义千问 / DashScope 兼容模式
@@ -177,7 +181,7 @@ func defaultsFor(p *llmConfig) {
 			p.baseURL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 		}
 		if p.model == "" {
-			p.model = "qwen-plus"
+			p.model = "qwen3.7-max"
 		}
 	case "hunyuan":
 		// 腾讯混元，OpenAI 兼容
@@ -185,7 +189,7 @@ func defaultsFor(p *llmConfig) {
 			p.baseURL = "https://api.hunyuan.cloud.tencent.com/v1"
 		}
 		if p.model == "" {
-			p.model = "hunyuan-turbo"
+			p.model = "hunyuan-turbos-latest"
 		}
 	case "qianfan":
 		// 百度千帆 / 文心一言，OpenAI 兼容端点
@@ -193,20 +197,21 @@ func defaultsFor(p *llmConfig) {
 			p.baseURL = "https://qianfan.baidubce.com/v2"
 		}
 		if p.model == "" {
-			p.model = "ernie-4.0-turbo-8k"
+			p.model = "ernie-5.1"
 		}
 	case "openrouter":
 		if p.baseURL == "" {
 			p.baseURL = "https://openrouter.ai/api/v1"
 		}
 		if p.model == "" {
-			p.model = "openai/gpt-4o-mini"
+			p.model = "openai/gpt-5.5"
 		}
 	case "mistral":
 		if p.baseURL == "" {
 			p.baseURL = "https://api.mistral.ai/v1"
 		}
 		if p.model == "" {
+			// mistral-large-latest 是滚动别名，已指向当前 Large 旗舰，自动跟新，保持不变
 			p.model = "mistral-large-latest"
 		}
 	case "groq":
@@ -214,28 +219,28 @@ func defaultsFor(p *llmConfig) {
 			p.baseURL = "https://api.groq.com/openai/v1"
 		}
 		if p.model == "" {
-			p.model = "llama-3.3-70b-versatile"
+			p.model = "openai/gpt-oss-120b"
 		}
 	case "together":
 		if p.baseURL == "" {
 			p.baseURL = "https://api.together.xyz/v1"
 		}
 		if p.model == "" {
-			p.model = "meta-llama/Llama-3.3-70B-Instruct-Turbo"
+			p.model = "deepseek-ai/DeepSeek-R1"
 		}
 	case "fireworks":
 		if p.baseURL == "" {
 			p.baseURL = "https://api.fireworks.ai/inference/v1"
 		}
 		if p.model == "" {
-			p.model = "accounts/fireworks/models/llama-v3p3-70b-instruct"
+			p.model = "accounts/fireworks/models/deepseek-v4-pro"
 		}
 	case "perplexity":
 		if p.baseURL == "" {
 			p.baseURL = "https://api.perplexity.ai"
 		}
 		if p.model == "" {
-			p.model = "sonar"
+			p.model = "sonar-pro"
 		}
 	case "cohere":
 		// Cohere v2 提供 OpenAI 兼容端点
@@ -243,7 +248,7 @@ func defaultsFor(p *llmConfig) {
 			p.baseURL = "https://api.cohere.ai/compatibility/v1"
 		}
 		if p.model == "" {
-			p.model = "command-r-plus"
+			p.model = "command-a-plus-05-2026"
 		}
 	case "siliconflow":
 		// 硅基流动
@@ -251,7 +256,7 @@ func defaultsFor(p *llmConfig) {
 			p.baseURL = "https://api.siliconflow.cn/v1"
 		}
 		if p.model == "" {
-			p.model = "deepseek-ai/DeepSeek-V3"
+			p.model = "deepseek-ai/DeepSeek-V4-Pro"
 		}
 	case "yi":
 		// 零一万物
@@ -259,7 +264,7 @@ func defaultsFor(p *llmConfig) {
 			p.baseURL = "https://api.lingyiwanwu.com/v1"
 		}
 		if p.model == "" {
-			p.model = "yi-large"
+			p.model = "yi-lightning"
 		}
 	case "stepfun":
 		// 阶跃星辰
@@ -267,13 +272,13 @@ func defaultsFor(p *llmConfig) {
 			p.baseURL = "https://api.stepfun.com/v1"
 		}
 		if p.model == "" {
-			p.model = "step-2-16k"
+			p.model = "step-3.7-flash"
 		}
 	case "azure":
 		// Azure OpenAI：用户必须填写完整 BaseURL（含 deployment 路径）
 		// 例：https://{resource}.openai.azure.com/openai/deployments/{deployment}
 		if p.model == "" {
-			p.model = "gpt-4o-mini"
+			p.model = "gpt-5.5"
 		}
 	}
 }

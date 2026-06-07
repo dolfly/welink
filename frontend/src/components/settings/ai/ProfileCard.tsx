@@ -216,7 +216,7 @@ export const ProfileCard: React.FC<{
           <AlertCircle size={13} className="flex-shrink-0 mt-0.5 text-amber-500" />
           <div>
             <strong>MiniMax-M2 系列是思考模型</strong>，会输出推理过程，响应较慢且 token 消耗大。
-            如不需要深度推理，建议使用 <button type="button" onClick={() => onChange({ ...profile, model: 'MiniMax-Text-01' })} className="text-[#07c160] font-bold underline">MiniMax-Text-01</button> 或 <button type="button" onClick={() => onChange({ ...profile, model: 'MiniMax-Text-01-128k' })} className="text-[#07c160] font-bold underline">MiniMax-Text-01-128k</button>。
+            如不需要深度推理，建议使用 <button type="button" onClick={() => onChange({ ...profile, model: 'MiniMax-M3' })} className="text-[#07c160] font-bold underline">MiniMax-M3</button>。
           </div>
         </div>
       )}

@@ -84,9 +84,9 @@ const PROVIDER_LABELS: Record<string, string> = {
 };
 const PROVIDER_DEFAULT_MODELS: Record<string, string> = {
   deepseek: 'deepseek-v4-pro', doubao: 'doubao-seed-2-0-pro-260215',
-  kimi: 'kimi-k2.5', gemini: 'gemini-2.0-flash',
-  glm: 'glm-4-flash', grok: 'grok-3-mini', openai: 'gpt-4o-mini',
-  claude: 'claude-haiku-4-5-20251001', ollama: 'llama3',
+  kimi: 'kimi-k2.6', gemini: 'gemini-3.5-flash',
+  glm: 'glm-5.1', grok: 'grok-4.3', openai: 'gpt-5.5',
+  claude: 'claude-opus-4-8', ollama: 'llama3.3',
 };
 
 type TokenLevel = 'ok' | 'warn' | 'danger' | 'over';

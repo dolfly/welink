@@ -78,17 +78,17 @@ Prompt 中可以使用以下变量，运行时自动替换：
 |----------|------|---------|
 | `deepseek` | DeepSeek | `deepseek-v4-pro` |
 | `doubao` | 豆包（火山方舟 Volcengine Ark） | `doubao-seed-2-0-pro-260215` |
-| `kimi` | Kimi（月之暗面） | `kimi-k2.5` |
-| `gemini` | Google Gemini（AI Studio） | `gemini-2.0-flash` |
-| `vertex` | **Google Vertex AI**（原生） | `google/gemini-2.0-flash-001` |
-| `bedrock` | **AWS Bedrock**（原生） | `us.anthropic.claude-sonnet-4-6` |
-| `glm` | 智谱 AI | `glm-4-flash` |
-| `grok` | xAI Grok | `grok-3-mini` |
-| `minimax` | MiniMax 国际版 | `MiniMax-Text-01` |
-| `minimax-cn` | MiniMax 国内版 | `MiniMax-Text-01` |
-| `openai` | OpenAI | `gpt-4o-mini` |
-| `claude` | Anthropic Claude（直接 API） | `claude-haiku-4-5-20251001` |
-| `ollama` | 本地 Ollama | `llama3` |
+| `kimi` | Kimi（月之暗面） | `kimi-k2.6` |
+| `gemini` | Google Gemini（AI Studio） | `gemini-3.5-flash` |
+| `vertex` | **Google Vertex AI**（原生） | `google/gemini-3.5-flash` |
+| `bedrock` | **AWS Bedrock**（原生） | `us.anthropic.claude-opus-4-8` |
+| `glm` | 智谱 AI | `glm-5.1` |
+| `grok` | xAI Grok | `grok-4.3` |
+| `minimax` | MiniMax 国际版 | `MiniMax-M3` |
+| `minimax-cn` | MiniMax 国内版 | `MiniMax-M3` |
+| `openai` | OpenAI | `gpt-5.5` |
+| `claude` | Anthropic Claude（直接 API） | `claude-opus-4-8` |
+| `ollama` | 本地 Ollama | `llama3.3` |
 | `custom` | 自定义 OpenAI 兼容接口 | 用户指定 |
 
 ::: tip 说明
@@ -144,7 +144,7 @@ Vertex AI 是 Google Cloud 的企业级 AI 平台，适合公司已有 GCP 账�
 | **Provider** | 选择 `Google Vertex AI` |
 | **Service Account JSON** | 把下载的 JSON 文件内容**全部粘贴**进来 |
 | **Base URL** | `https://us-central1-aiplatform.googleapis.com/v1beta1/projects/my-welink-project-123/locations/us-central1/endpoints/openapi` |
-| **Model** | `google/gemini-2.0-flash-001`（留空也行，会用默认值） |
+| **Model** | `google/gemini-3.5-flash`（留空也行，会用默认值） |
 
 ::: warning Base URL 格式
 Base URL 必须包含你的 **Project ID** 和 **Region**，格式为：
@@ -211,7 +211,7 @@ AWS Bedrock 是亚马逊云的托管大模型服务，适合公司已有 AWS 账
 | **Provider** | 选择 `AWS Bedrock` |
 | **API Key** | `AKIA...:wJalr...`（格式：`AccessKeyId:SecretAccessKey`，中间用英文冒号分隔） |
 | **Base URL** | `https://bedrock-runtime.us-east-1.amazonaws.com`（改成你的区域） |
-| **Model** | `us.anthropic.claude-sonnet-4-6`（或其他已开通的模型 ID） |
+| **Model** | `us.anthropic.claude-opus-4-8`（或其他已开通的模型 ID） |
 
 ::: tip API Key 格式
 WeLink 的 Bedrock 实现把 Access Key 和 Secret Key 合并成一个字符串，用 **英文冒号 `:`** 分隔：
@@ -230,6 +230,7 @@ AKIAIOSFODNN7EXAMPLE:wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 
 | 模型 | Model ID |
 |------|---------|
+| Claude Opus 4.8（旗舰） | `us.anthropic.claude-opus-4-8` |
 | Claude Sonnet 4.6 | `us.anthropic.claude-sonnet-4-6` |
 | Claude 3.5 Sonnet | `anthropic.claude-3-5-sonnet-20241022-v2:0` |
 | Claude 3.5 Haiku | `anthropic.claude-3-5-haiku-20241022-v1:0` |
