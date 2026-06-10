@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Play, Pause, SkipForward, X, Clock, Gauge } from 'lucide-react';
+import { Play, Pause, SkipForward, X, Clock, Gauge, Maximize2, Minimize2, Sparkles } from 'lucide-react';
 import type { ChatMessage } from '../../types';
 import { contactsApi } from '../../services/api';
 import { usePrivacyMode } from '../../contexts/PrivacyModeContext';
@@ -24,9 +24,12 @@ const SPEED_OPTIONS = [
   { label: '10x', value: 10 },
   { label: '50x', value: 50 },
   { label: '100x', value: 100 },
+  { label: '200x', value: 200 },
 ];
 
 const MAX_GAP_MS = 5000; // 最大间隔 5 秒（即使实时间隔更长也不超过这个）
+const SMART_SILENCE_MS = 5 * 60 * 1000; // 智能节奏：超过 5 分钟没人说话算"冷场"，直接跳过
+const SKIP_STEPS = [3, 5, 10]; // 快进步长可选
 
 export const ChatReplay: React.FC<Props> = ({ username, displayName, avatarUrl, onClose }) => {
   const { privacyMode } = usePrivacyMode();
@@ -40,6 +43,9 @@ export const ChatReplay: React.FC<Props> = ({ username, displayName, avatarUrl, 
   const [dateTo, setDateTo] = useState('');
   const [msgLimit, setMsgLimit] = useState(100);
   const [loaded, setLoaded] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [smart, setSmart] = useState(false);
+  const [skipStep, setSkipStep] = useState(5);
   const scrollRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -89,10 +95,17 @@ export const ChatReplay: React.FC<Props> = ({ username, displayName, avatarUrl, 
     const prevTime = new Date(`${prev.date}T${prev.time}:00`).getTime();
     const realGap = Math.max(0, curTime - prevTime);
 
+    // 智能节奏：冷场直接跳过，密集时放慢到能读完这条再出下一条
+    if (smart) {
+      if (realGap > SMART_SILENCE_MS) return 260;
+      const readMs = Math.min(420 + (cur.content?.length ?? 0) * 28, 1800);
+      return Math.min(Math.max(realGap / speed, readMs), 2400);
+    }
+
     // 按速度缩放，但不超过 MAX_GAP_MS
     const scaled = Math.min(realGap / speed, MAX_GAP_MS);
     return Math.max(scaled, 100); // 最小 100ms
-  }, [allMessages, speed]);
+  }, [allMessages, speed, smart]);
 
   // 播放逻辑
   useEffect(() => {
@@ -110,27 +123,62 @@ export const ChatReplay: React.FC<Props> = ({ username, displayName, avatarUrl, 
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [playing, visibleCount, allMessages.length, getDelay]);
 
-  const togglePlay = () => {
-    if (visibleCount >= allMessages.length) {
-      setVisibleCount(0);
-    }
+  const togglePlay = useCallback(() => {
+    setVisibleCount(v => (v >= allMessages.length && allMessages.length > 0 ? 0 : v));
     setPlaying(p => !p);
-  };
+  }, [allMessages.length]);
 
-  const skipForward = () => {
-    setVisibleCount(prev => Math.min(prev + 10, allMessages.length));
+  const skipForward = useCallback(() => {
+    setVisibleCount(prev => Math.min(prev + skipStep, allMessages.length));
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-  };
+  }, [allMessages.length, skipStep]);
+
+  // 快捷键：空格 播放/暂停，→ 快进，ESC 退出全屏（capture 抢在外层 modal 前）
+  useEffect(() => {
+    if (!loaded) return;
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        skipForward();
+      } else if (e.key === 'Escape' && fullscreen) {
+        e.preventDefault();
+        e.stopPropagation();
+        setFullscreen(false);
+      }
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [loaded, fullscreen, togglePlay, skipForward]);
 
   const progress = allMessages.length > 0 ? (visibleCount / allMessages.length) * 100 : 0;
 
   return (
-    <div className="flex flex-col" style={{ minHeight: 400 }}>
+    <div
+      className={fullscreen
+        ? 'fixed inset-0 z-[200] bg-[#ededed] dark:bg-[#111] p-4 sm:p-6 flex flex-col'
+        : 'flex flex-col'}
+      style={fullscreen ? undefined : { minHeight: 400 }}
+    >
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="text-xs text-gray-500">
+          {fullscreen && <span className="font-bold text-[#1d1d1f] dark:text-gray-100 mr-2">{displayName}</span>}
           {allMessages.length > 0 ? `${visibleCount} / ${allMessages.length} 条` : '选择时间范围后开始回放'}
         </div>
+        {loaded && (
+          <button
+            onClick={() => setFullscreen(f => !f)}
+            className="text-gray-400 hover:text-[#07c160] p-1.5 transition-colors"
+            title={fullscreen ? '退出全屏 (Esc)' : '全屏回放'}
+          >
+            {fullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+          </button>
+        )}
       </div>
 
         {/* 选择回放方式（未加载时显示） */}
@@ -193,7 +241,7 @@ export const ChatReplay: React.FC<Props> = ({ username, displayName, avatarUrl, 
         {/* 消息区域 */}
         {loaded && (
           <>
-            <div ref={scrollRef} className="flex-1 overflow-y-auto py-2 space-y-2 bg-[#f0f0f0] dark:bg-gray-900/50 rounded-2xl px-3 max-h-[50vh]">
+            <div ref={scrollRef} className={`flex-1 overflow-y-auto py-2 space-y-2 bg-[#f0f0f0] dark:bg-gray-900/50 rounded-2xl px-3 ${fullscreen ? 'min-h-0' : 'max-h-[50vh]'}`}>
               {allMessages.slice(0, visibleCount).map((msg, i) => {
                 const showDate = i === 0 || msg.date !== allMessages[i - 1]?.date;
                 return (
@@ -246,17 +294,35 @@ export const ChatReplay: React.FC<Props> = ({ username, displayName, avatarUrl, 
               </div>
 
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <button onClick={togglePlay} className="w-9 h-9 rounded-full bg-[#07c160] flex items-center justify-center text-white hover:bg-[#06ad56] transition-colors shadow-sm">
+                <div className="flex items-center gap-1.5">
+                  <button onClick={togglePlay} className="w-9 h-9 rounded-full bg-[#07c160] flex items-center justify-center text-white hover:bg-[#06ad56] transition-colors shadow-sm" title="播放/暂停 (空格)">
                     {playing ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
                   </button>
-                  <button onClick={skipForward} className="text-gray-400 hover:text-[#07c160] p-1.5" title="快进 10 条">
+                  <button onClick={skipForward} className="text-gray-400 hover:text-[#07c160] p-1.5" title={`快进 ${skipStep} 条 (→)`}>
                     <SkipForward size={14} />
                   </button>
+                  <button
+                    onClick={() => setSkipStep(s => SKIP_STEPS[(SKIP_STEPS.indexOf(s) + 1) % SKIP_STEPS.length])}
+                    className="text-[10px] font-mono font-bold text-gray-400 hover:text-[#07c160] px-1 py-0.5 rounded transition-colors"
+                    title="切换快进步长（3 / 5 / 10 条）"
+                  >
+                    +{skipStep}
+                  </button>
+                  <span className="text-[9px] text-gray-300 hidden sm:inline ml-1">空格 播放 · → 快进</span>
                 </div>
 
                 <div className="flex items-center gap-1">
-                  <Gauge size={11} className="text-gray-300" />
+                  <button
+                    onClick={() => setSmart(s => !s)}
+                    className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold transition-all ${
+                      smart ? 'bg-[#10aeff] text-white' : 'text-gray-400 hover:text-[#10aeff]'
+                    }`}
+                    title="智能节奏：冷场直接跳过，发言密集时自动放慢到能读完"
+                  >
+                    <Sparkles size={9} />
+                    智能
+                  </button>
+                  <Gauge size={11} className="text-gray-300 ml-1" />
                   {SPEED_OPTIONS.map(s => (
                     <button
                       key={s.value}
