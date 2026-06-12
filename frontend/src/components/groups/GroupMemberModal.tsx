@@ -135,7 +135,8 @@ export const GroupMemberModal: React.FC<Props> = ({ groupUsername, groupName, me
                 </div>
                 <div className="flex items-end gap-[2px] h-14">
                   {data.hourly_dist.map((c, h) => (
-                    <div key={h} className="flex-1 flex flex-col items-center" title={`${h}:00 — ${c} 条`}>
+                    // 注意：百分比高度需要中间层有明确高度（h-full），否则柱子全是 0 高
+                    <div key={h} className="flex-1 h-full flex flex-col justify-end" title={`${h}:00 — ${c} 条`}>
                       <div
                         className={`w-full rounded-sm ${h < 6 ? 'bg-purple-300 dark:bg-purple-500/60' : 'bg-[#07c160]/70'}`}
                         style={{ height: `${Math.max(c > 0 ? 8 : 2, (c / maxHour) * 100)}%` }}
@@ -154,10 +155,13 @@ export const GroupMemberModal: React.FC<Props> = ({ groupUsername, groupName, me
                   <div className="flex items-center gap-1.5 text-xs font-bold text-gray-600 dark:text-gray-300 mb-2">
                     <CalendarDays size={12} className="text-[#10aeff]" /> 周分布
                   </div>
-                  <div className="flex items-end gap-1 h-12">
+                  <div className="flex items-end gap-1 h-14">
                     {data.weekly_dist.map((c, i) => (
-                      <div key={i} className="flex-1 flex flex-col items-center gap-0.5" title={`周${WEEKDAYS[i]} — ${c} 条`}>
-                        <div className="w-full rounded-sm bg-[#10aeff]/70" style={{ height: `${Math.max(c > 0 ? 8 : 2, (c / maxWeek) * 100)}%` }} />
+                      <div key={i} className="flex-1 h-full flex flex-col items-center gap-0.5" title={`周${WEEKDAYS[i]} — ${c} 条`}>
+                        {/* flex-1 区域有确定高度，柱子百分比才生效 */}
+                        <div className="w-full flex-1 flex items-end">
+                          <div className="w-full rounded-sm bg-[#10aeff]/70" style={{ height: `${Math.max(c > 0 ? 8 : 2, (c / maxWeek) * 100)}%` }} />
+                        </div>
                         <span className="text-[8px] text-gray-300">{WEEKDAYS[i]}</span>
                       </div>
                     ))}
@@ -169,7 +173,7 @@ export const GroupMemberModal: React.FC<Props> = ({ groupUsername, groupName, me
                   </div>
                   <div className="flex items-end gap-[2px] h-12">
                     {trend.map(t => (
-                      <div key={t.month} className="flex-1" title={`${t.month} — ${t.count} 条`}>
+                      <div key={t.month} className="flex-1 h-full flex items-end" title={`${t.month} — ${t.count} 条`}>
                         <div className="w-full rounded-sm bg-[#ff9500]/60" style={{ height: `${Math.max(t.count > 0 ? 8 : 2, (t.count / maxTrend) * 100)}%` }} />
                       </div>
                     ))}
