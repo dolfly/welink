@@ -3126,6 +3126,22 @@ func serverMain() {
 			c.JSON(http.StatusOK, getSvc().GetGroupDetail(uname))
 		})
 
+		// 群友画像：单个成员在该群的发言分析（无论是否好友） Issue #104
+		prot.GET("/groups/member-detail", func(c *gin.Context) {
+			uname := c.Query("username")
+			member := c.Query("member")
+			if uname == "" || member == "" {
+				c.JSON(400, gin.H{"error": "username 和 member 必填"})
+				return
+			}
+			detail, err := getSvc().GetGroupMemberDetail(uname, member)
+			if err != nil {
+				c.JSON(400, gin.H{"error": err.Error()})
+				return
+			}
+			c.JSON(http.StatusOK, detail)
+		})
+
 		// 群聊人物关系
 		prot.GET("/groups/relationships", func(c *gin.Context) {
 			uname := c.Query("username")

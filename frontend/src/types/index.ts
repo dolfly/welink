@@ -401,6 +401,32 @@ export interface GroupDetail {
   group_base_reply_rate?: number;  // 0-1
 }
 
+// 群友画像：单个成员在某群的发言分析（Issue #104，无论是否好友）
+export interface GroupMemberDetail {
+  speaker: string;
+  username: string;
+  avatar_url: string;
+  is_contact: boolean;
+  count: number;
+  text_count: number;
+  first_message_time: string;
+  last_message_time: string;
+  first_message_ts: number;
+  last_message_ts: number;
+  active_days: number;
+  rank: number;
+  total_spoken: number;
+  share_pct: number;
+  group_total: number;
+  late_night_cnt: number;
+  hourly_dist: number[];
+  weekly_dist: number[];
+  monthly_trend: { month: string; count: number }[] | null;
+  type_dist: Record<string, number>;
+  top_words: WordCount[];
+  recent_msgs: { time: string; content: string }[] | null;
+}
+
 export interface GroupYearReview {
   group_name: string;
   year: number;

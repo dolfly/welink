@@ -14,6 +14,7 @@ import { GroupDayChatPanel } from './GroupDayChatPanel';
 import { GroupChatReplay } from './GroupChatReplay';
 import { ClockFingerprint } from './ClockFingerprint';
 import { GroupYearReviewModal } from './GroupYearReviewModal';
+import { GroupMemberModal } from './GroupMemberModal';
 import { getGroupPersonaTags, toneClasses } from '../../utils/groupPersona';
 import { Section } from '../common/Section';
 import { MessageTypePieChart } from '../common/MessageTypePieChart';
@@ -72,6 +73,8 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({ group, onClo
   };
   const [tab, setTab] = useState<'portrait' | 'search' | 'ai' | 'relationships' | 'sim' | 'replay'>('portrait');
   const [showYearReview, setShowYearReview] = useState(false);
+  // 群友画像（Issue #104）：任意成员（无论好友与否）的群内发言分析
+  const [memberDetail, setMemberDetail] = useState<{ wxid: string; speaker: string } | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
   const [forgeOpen, setForgeOpen] = useState(false);
   const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
@@ -713,12 +716,19 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({ group, onClo
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5 mb-0.5">
                               <span
-                                className={`text-sm font-semibold truncate ${contact ? 'text-[#07c160] cursor-pointer hover:underline' : 'text-[#1d1d1f] dk-text'}`}
-                                onClick={() => contact && onContactClick(contact)}
+                                className={`text-sm font-semibold truncate ${
+                                  m.username ? 'text-[#07c160] cursor-pointer hover:underline' : contact ? 'text-[#07c160] cursor-pointer hover:underline' : 'text-[#1d1d1f] dk-text'
+                                }`}
+                                onClick={() => {
+                                  // 群友画像：有 wxid 就能分析（无论好友与否，Issue #104）
+                                  if (m.username) setMemberDetail({ wxid: m.username, speaker: m.speaker });
+                                  else if (contact) onContactClick(contact);
+                                }}
+                                title={m.username ? '查看 TA 在本群的发言画像' : undefined}
                               >
                                 <span className={privacyMode ? 'privacy-blur' : ''}>{m.speaker}</span>
                               </span>
-                              {contact && (
+                              {(m.username || contact) && (
                                 <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[9px] text-[#07c160]">↗</span>
                               )}
                               {isSilent && (
@@ -1031,6 +1041,19 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({ group, onClo
           onClose={() => setShowYearReview(false)}
         />
       )}
+      {memberDetail && (() => {
+        const memberContact = findContact(memberDetail.speaker);
+        return (
+          <GroupMemberModal
+            groupUsername={group.username}
+            groupName={group.name}
+            memberWxid={memberDetail.wxid}
+            memberName={memberDetail.speaker}
+            onClose={() => setMemberDetail(null)}
+            onOpenContact={memberContact ? () => onContactClick(memberContact) : null}
+          />
+        );
+      })()}
     </div>
   );
 };

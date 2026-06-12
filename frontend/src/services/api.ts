@@ -304,6 +304,9 @@ export const groupsApi = {
 
   getRelationships: (username: string) =>
     api.get<void, import('../types').RelationshipGraph | null>('/groups/relationships', { params: { username } }),
+
+  getMemberDetail: (username: string, member: string) =>
+    api.get<void, import('../types').GroupMemberDetail>('/groups/member-detail', { params: { username, member } }),
 };
 
 export const calendarApi = {
