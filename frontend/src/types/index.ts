@@ -202,7 +202,45 @@ export interface BackendStatus {
   last_error?: string;
 }
 
-export type TabType = 'dashboard' | 'digest' | 'stats' | 'contacts' | 'db' | 'groups' | 'search' | 'calendar' | 'anniversary' | 'urls' | 'skills' | 'labs' | 'gallery' | 'export' | 'memory' | 'settings';
+export type TabType = 'dashboard' | 'digest' | 'stats' | 'contacts' | 'db' | 'groups' | 'search' | 'calendar' | 'anniversary' | 'urls' | 'skills' | 'labs' | 'gallery' | 'memory' | 'tasks' | 'export' | 'settings';
+
+// 定时任务（主动总结/挖掘）
+export type TaskType = 'summary' | 'todo' | 'watch' | 'mood' | 'custom';
+export type TaskTargetKind = 'contact' | 'group' | 'all_private' | 'all_group';
+export type TaskScheduleKind = 'daily' | 'weekly' | 'interval';
+
+export interface TaskRun {
+  id: number;
+  task_id: number;
+  task_name?: string;
+  status: 'success' | 'error' | 'skipped';
+  result: string;
+  error: string;
+  msg_count: number;
+  window_from: number;
+  window_to: number;
+  read: boolean;
+  created_at: number;
+}
+
+export interface ScheduledTask {
+  id: number;
+  name: string;
+  task_type: TaskType;
+  prompt: string;
+  target_kind: TaskTargetKind;
+  target_id: string;
+  target_name: string;
+  schedule_kind: TaskScheduleKind;
+  time_of_day: string;
+  weekday: number;
+  interval_hours: number;
+  enabled: boolean;
+  last_run_at: number;
+  next_run_at: number;
+  created_at: number;
+  last_run?: TaskRun | null;
+}
 
 export interface DetectedEvent {
   type: string;

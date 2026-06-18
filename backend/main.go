@@ -303,6 +303,9 @@ func serverMain() {
 		return dbMgr
 	}
 
+	// 启动定时任务调度器（每分钟扫到期任务，串行跑；app 重开时补跑错过的）
+	StartTaskScheduler(getSvc)
+
 	// 4. 初始化 Gin 路由
 	r := gin.Default()
 
@@ -3073,6 +3076,9 @@ func serverMain() {
 
 		// 创意实验室 · 主动指数榜（谁先开口，开场占比，零 LLM）
 		registerInitiativeRoutes(prot, getSvc)
+
+		// 定时任务（主动总结/挖掘，结果进收件箱）
+		registerScheduledTaskRoutes(prot, getSvc)
 
 		// 创意实验室 · 社交圈年度流动榜（今年 vs 去年：谁新晋/谁淡出/谁回归，零 LLM）
 		registerSocialFlowRoutes(prot, getSvc)

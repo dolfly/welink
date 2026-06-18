@@ -44,6 +44,7 @@ const SkillsView         = lazy(() => import('./components/skills/SkillsView').t
 const LabsPage           = lazy(() => import('./components/labs/LabsPage').then(m => ({ default: m.LabsPage })));
 const GalleryPage        = lazy(() => import('./components/gallery/GalleryPage').then(m => ({ default: m.GalleryPage })));
 const MemoryLibraryPage  = lazy(() => import('./components/memory/MemoryLibraryPage').then(m => ({ default: m.MemoryLibraryPage })));
+const SchedulerPage      = lazy(() => import('./components/tasks/SchedulerPage').then(m => ({ default: m.SchedulerPage })));
 const SettingsPage       = lazy(() => import('./components/settings').then(m => ({ default: m.SettingsPage })));
 // GroupsView 与 GroupDetailModal 同源；Vite 会合并成同一个 chunk，先后引用相互预热
 const GroupsView         = lazy(() => import('./components/groups/GroupsView').then(m => ({ default: m.GroupsView })));
@@ -87,7 +88,7 @@ function AppInner() {
 
   // State — 从 URL hash 恢复当前 tab + 联系人/群聊弹窗
   // hash 格式：#/stats  #/stats/contact/wxid_abc  #/groups/group/xxx@chatroom
-  const VALID_TABS: TabType[] = ['dashboard', 'digest', 'stats', 'contacts', 'db', 'groups', 'search', 'calendar', 'anniversary', 'urls', 'skills', 'labs', 'gallery', 'export', 'memory', 'settings'];
+  const VALID_TABS: TabType[] = ['dashboard', 'digest', 'stats', 'contacts', 'db', 'groups', 'search', 'calendar', 'anniversary', 'urls', 'skills', 'labs', 'gallery', 'export', 'memory', 'tasks', 'settings'];
 
   const parseHash = (): { tab: TabType; contactId?: string; groupId?: string } => {
     const raw = window.location.hash.replace('#/', '').replace('#', '');
@@ -570,6 +571,8 @@ function AppInner() {
           <ExportCenterPage contacts={contacts} groups={allGroups} />
         ) : activeTab === 'memory' ? (
           <MemoryLibraryPage contacts={contacts} groups={allGroups} />
+        ) : activeTab === 'tasks' ? (
+          <SchedulerPage contacts={contacts} groups={allGroups} />
         ) : activeTab === 'settings' ? (
           <SettingsPage
             isAppMode={appInfo.app_mode}

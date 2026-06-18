@@ -309,6 +309,28 @@ export const groupsApi = {
     api.get<void, import('../types').GroupMemberDetail>('/groups/member-detail', { params: { username, member } }),
 };
 
+// 定时任务（主动总结/挖掘）
+type TaskT = import('../types').ScheduledTask;
+type TaskRunT = import('../types').TaskRun;
+export const tasksApi = {
+  list: () =>
+    api.get<void, { tasks: TaskT[] }>('/tasks'),
+  create: (t: Partial<TaskT>) =>
+    api.post<void, TaskT>('/tasks', t),
+  update: (id: number, t: Partial<TaskT>) =>
+    api.put<void, TaskT>(`/tasks/${id}`, t),
+  remove: (id: number) =>
+    api.delete<void, { ok: boolean }>(`/tasks/${id}`),
+  runNow: (id: number) =>
+    api.post<void, TaskRunT>(`/tasks/${id}/run-now`, {}),
+  runs: (id: number, limit = 30) =>
+    api.get<void, { runs: TaskRunT[] }>(`/tasks/${id}/runs`, { params: { limit } }),
+  feed: (limit = 50) =>
+    api.get<void, { runs: TaskRunT[]; unread: number }>('/tasks/feed', { params: { limit } }),
+  markRead: () =>
+    api.post<void, { ok: boolean }>('/tasks/feed/read', {}),
+};
+
 export const calendarApi = {
   getHeatmap: () =>
     api.get<void, { heatmap: Record<string, number> }>('/calendar/heatmap'),
