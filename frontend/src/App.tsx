@@ -71,7 +71,7 @@ import { usePrivacySettings } from './hooks/usePrivacySettings';
 // Types
 import type { TabType, ContactStats, HealthStatus, TimeRange, GroupInfo } from './types';
 
-import { globalApi, groupsApi } from './services/api';
+import { globalApi, groupsApi, tasksApi } from './services/api';
 
 const ALL_TIME: TimeRange = { from: null, to: null, label: '全部' };
 
@@ -114,6 +114,19 @@ function AppInner() {
     setActiveTabRaw(tab);
     window.history.pushState(null, '', `#/${tab}`);
   }, []);
+
+  // 定时任务收件箱未读角标：轮询 unread 数；进入 tasks tab 即清零（SchedulerPage 会标记已读）
+  const [taskUnread, setTaskUnread] = useState(0);
+  useEffect(() => {
+    if (activeTab === 'tasks') { setTaskUnread(0); return; }
+    let stop = false;
+    const poll = () => {
+      tasksApi.feed(1).then(r => { if (!stop) setTaskUnread(r.unread ?? 0); }).catch(() => {});
+    };
+    poll();
+    const id = setInterval(poll, 60000);
+    return () => { stop = true; clearInterval(id); };
+  }, [activeTab]);
 
   // 监听浏览器前进/后退
   useEffect(() => {
@@ -507,7 +520,7 @@ function AppInner() {
     <PrivacyModeContext.Provider value={{ privacyMode, setPrivacyMode }}>
     <div className="flex h-screen dk-page bg-[#f8f9fb] dk-text text-[#1d1d1f] font-sans overflow-hidden">
       {/* Sidebar */}
-      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} dark={dark} onToggleDark={toggleDark} />
+      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} dark={dark} onToggleDark={toggleDark} badges={{ tasks: taskUnread }} />
 
       {/* Main Content */}
       <main className={`flex-1 overflow-y-auto dk-page ${activeTab === 'dashboard' ? 'pb-16 sm:pb-0' : 'p-4 sm:p-10 pb-20 sm:pb-10'}`}>

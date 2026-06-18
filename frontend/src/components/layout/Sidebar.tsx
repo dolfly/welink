@@ -11,7 +11,18 @@ interface SidebarProps {
   onTabChange: (tab: TabType) => void;
   dark: boolean;
   onToggleDark: () => void;
+  badges?: Partial<Record<TabType, number>>;
 }
+
+// 导航项右上角的未读角标（折叠/展开/手机端通用）
+const NavBadge: React.FC<{ count?: number }> = ({ count }) => {
+  if (!count || count <= 0) return null;
+  return (
+    <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px] px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none shadow-sm">
+      {count > 99 ? '99+' : count}
+    </span>
+  );
+};
 
 // WKWebView UA 含 AppleWebKit 但不含 Safari / Chrome / Firefox
 const isWebView = () => {
@@ -27,7 +38,7 @@ const openExternal = (url: string) => {
   }
 };
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, dark, onToggleDark }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, dark, onToggleDark, badges }) => {
   const [swaggerOpen, setSwaggerOpen] = useState(false);
   const [expanded, setExpanded] = useState(() => {
     return localStorage.getItem('welink_sidebar_expanded') !== 'false';
@@ -126,7 +137,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, dark, 
                   : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-white/5'
               }`}
             >
-              <span className="flex-shrink-0">{icon}</span>
+              <span className="flex-shrink-0 relative">
+                {icon}
+                <NavBadge count={badges?.[tab]} />
+              </span>
               {expanded && (
                 <span className="text-xs font-semibold truncate">{label}</span>
               )}
@@ -165,7 +179,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, dark, 
               activeTab === tab ? 'text-[#07c160]' : 'text-gray-400'
             }`}
           >
-            <span className="flex-shrink-0">{icon}</span>
+            <span className="flex-shrink-0 relative">
+              {icon}
+              <NavBadge count={badges?.[tab]} />
+            </span>
             <span className="text-[10px] font-semibold truncate w-full text-center px-0.5">{label}</span>
           </button>
         ))}
