@@ -101,7 +101,9 @@ export const SchedulerPage: React.FC<Props> = ({ contacts, groups }) => {
       }
       await load();
     } catch (e) {
-      toast.error('执行失败：' + ((e as Error).message || ''));
+      const msg = (e as { response?: { data?: { error?: string } }; message?: string })
+        ?.response?.data?.error || (e as Error).message || '未知错误';
+      toast.error('执行失败：' + msg);
     } finally {
       setRunningId(null);
     }

@@ -12,6 +12,7 @@ package service
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -79,22 +80,27 @@ func (s *ContactService) GetGroupMemberDetail(groupUsername, memberWxid string) 
 
 	tableName := db.GetTableName(groupUsername)
 	tw := s.timeWhere()
-	nameMap := s.loadContactNameMap()
-	avatarMap := s.loadContactAvatarMap()
 
 	d := &GroupMemberDetail{
 		Username: memberWxid,
 		TypeDist: make(map[string]int),
 		TopWords: []WordCount{},
 	}
-	if n, ok := nameMap[memberWxid]; ok && n != "" {
-		d.Speaker = n
-		d.IsContact = true
-	} else {
-		d.Speaker = memberWxid
-	}
-	if av, ok := avatarMap[memberWxid]; ok {
-		d.AvatarURL = av
+	// 成员名 / 头像：单行点查，避免为一个人全表扫 contact 两遍
+	d.Speaker = memberWxid
+	if s.dbMgr != nil && s.dbMgr.ContactDB != nil {
+		var remark, nick, avatar string
+		if err := s.dbMgr.ContactDB.QueryRow(
+			`SELECT COALESCE(remark,''), COALESCE(nick_name,''), COALESCE(small_head_url,'') FROM contact WHERE username = ?`,
+			memberWxid).Scan(&remark, &nick, &avatar); err == nil {
+			d.IsContact = true
+			if remark != "" {
+				d.Speaker = remark
+			} else if nick != "" {
+				d.Speaker = nick
+			}
+			d.AvatarURL = avatar
+		}
 	}
 
 	perMember := make(map[string]int64) // wxid → 发言数（算排名/占比）
@@ -108,41 +114,63 @@ func (s *ContactService) GetGroupMemberDetail(groupUsername, memberWxid string) 
 	var recent []recentEntry
 
 	for _, mdb := range s.dbMgr.MessageDBs {
+		// 本 DB 的 rowid ↔ wxid，同时记下目标成员在本 DB 的 rowid
 		idToWxid := make(map[int64]string)
+		var memberRowIDs []int64
 		if nrows, nerr := mdb.Query("SELECT rowid, user_name FROM Name2Id"); nerr == nil {
 			for nrows.Next() {
 				var rid int64
 				var uname string
 				nrows.Scan(&rid, &uname)
 				idToWxid[rid] = uname
+				if uname == memberWxid {
+					memberRowIDs = append(memberRowIDs, rid)
+				}
 			}
 			nrows.Close()
 		}
 
+		// Pass A：全群按发言人聚合条数（不解码内容，很便宜）→ 排名 / 占比 / 总数
+		if arows, aerr := mdb.Query(fmt.Sprintf(
+			"SELECT real_sender_id, COUNT(*) FROM [%s]%s GROUP BY real_sender_id", tableName, tw)); aerr == nil {
+			for arows.Next() {
+				var rid, cnt int64
+				if arows.Scan(&rid, &cnt) != nil {
+					continue
+				}
+				d.GroupTotal += cnt
+				if wxid := idToWxid[rid]; wxid != "" {
+					perMember[wxid] += cnt
+				}
+			}
+			arows.Close()
+		}
+
+		// Pass B：只查目标成员自己的消息，解码内容只发生在 TA 的行上
+		if len(memberRowIDs) == 0 {
+			continue
+		}
+		ids := make([]string, len(memberRowIDs))
+		for i, r := range memberRowIDs {
+			ids[i] = strconv.FormatInt(r, 10)
+		}
+		where := " WHERE real_sender_id IN (" + strings.Join(ids, ",") + ")"
+		if tw != "" {
+			where += " AND (" + strings.TrimPrefix(tw, " WHERE ") + ")"
+		}
 		rows, err := mdb.Query(fmt.Sprintf(
-			"SELECT create_time, real_sender_id, local_type, message_content, COALESCE(WCDB_CT_message_content,0) FROM [%s]%s",
-			tableName, tw))
+			"SELECT create_time, local_type, message_content, COALESCE(WCDB_CT_message_content,0) FROM [%s]%s",
+			tableName, where))
 		if err != nil {
 			continue
 		}
 		for rows.Next() {
-			var ts, senderID int64
+			var ts int64
 			var lt int
 			var rawContent []byte
 			var ct int64
-			rows.Scan(&ts, &senderID, &lt, &rawContent, &ct)
-			d.GroupTotal++
+			rows.Scan(&ts, &lt, &rawContent, &ct)
 
-			wxid, ok := idToWxid[senderID]
-			if !ok || wxid == "" {
-				continue
-			}
-			perMember[wxid]++
-			if wxid != memberWxid {
-				continue
-			}
-
-			// —— 以下只对目标成员聚合 ——
 			content := decodeGroupContent(rawContent, ct)
 			dt := time.Unix(ts, 0).In(s.tz)
 			d.Count++

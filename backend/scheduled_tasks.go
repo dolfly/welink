@@ -71,6 +71,8 @@ func initScheduledTaskTables() error {
 		return fmt.Errorf("task_runs: create table: %w", err)
 	}
 	aiDB.Exec(`CREATE INDEX IF NOT EXISTS idx_task_runs_task ON task_runs(task_id, created_at DESC)`)
+	// 收件箱按时间全局倒序，给个全局索引
+	aiDB.Exec(`CREATE INDEX IF NOT EXISTS idx_task_runs_created ON task_runs(created_at DESC)`)
 	return nil
 }
 
@@ -413,12 +415,16 @@ func runDueTasks() {
 	}
 }
 
-// runTaskAndRecord 执行一个任务，存结果，并推进 next_run_at。
+// runTaskAndRecord 执行一个任务，存结果，并推进 next_run_at（调度器用，阻塞拿锁）。
 // manual=true 时是用户手动"立即执行"，不改调度时间（只更新 last_run）。
 func runTaskAndRecord(t *ScheduledTask, manual bool) *TaskRun {
 	taskRunMu.Lock()
 	defer taskRunMu.Unlock()
+	return recordTaskRunLocked(t, manual)
+}
 
+// recordTaskRunLocked 假定调用方已持有 taskRunMu。
+func recordTaskRunLocked(t *ScheduledTask, manual bool) *TaskRun {
 	run := executeTask(t)
 	run.CreatedAt = time.Now().Unix()
 	if id, err := saveTaskRun(run); err == nil {
@@ -746,7 +752,13 @@ func registerScheduledTaskRoutes(prot *gin.RouterGroup, getSvc func() *service.C
 			c.JSON(404, gin.H{"error": "任务不存在"})
 			return
 		}
-		run := runTaskAndRecord(t, true)
+		// 不阻塞：若后台调度器或另一次手动执行正在跑，直接告知忙，避免请求挂死
+		if !taskRunMu.TryLock() {
+			c.JSON(http.StatusConflict, gin.H{"error": "有任务正在执行中，请稍后再试"})
+			return
+		}
+		run := recordTaskRunLocked(t, true)
+		taskRunMu.Unlock()
 		c.JSON(http.StatusOK, run)
 	})
 
