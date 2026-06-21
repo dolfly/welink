@@ -13,6 +13,7 @@
 - [日历 / 时光机](#日历--时光机)
 - [全局搜索](#全局搜索)
 - [每日社交简报](#每日社交简报)
+- [定时任务](#定时任务)
 - [AI 分析](#ai-分析)
 - [AI 分身](#ai-分身)
 - [AI 群聊模拟](#ai-群聊模拟)
@@ -244,6 +245,10 @@ AI 关系摘要（低 token 统计预处理，给 `/ai/analyze` 打底）。
 
 导出群聊记录（最多 50,000 条）。
 
+### `GET /api/groups/member-detail?username=xxx@chatroom&member=wxid`
+
+某群成员的群内专属画像（`username` 群 wxid、`member` 成员 wxid，两者必填，缺一返回 400）。返回：群内排名 / 消息占比 / 活跃天数 / 深夜发言比例、24h 时段分布、周分布、近一年月度趋势、消息类型分布、TA 的高频词、最近发言样本。好友会附带可跳私聊「完整分析」的标记。
+
 ### `GET /api/groups/relationships?username=xxx@chatroom`
 
 力导向人物关系图（Louvain 社区检测 + 模块度 Q 兜底）。节点按小圈子着色，`Q<0.3` 时返回提示而非强凑圈。
@@ -331,6 +336,45 @@ Ghost 月：单月消息骤降 ≥80% 的"失联月"。
 ### `POST /api/daily-digest/regen?date=YYYY-MM-DD`
 
 强制重新生成某天简报（默认昨天）。调试或重新索引后用。
+
+
+## 定时任务
+
+侧边栏「定时任务」Tab：写指令 + 选目标会话 + 选周期，系统定时跑 LLM 做总结 / 待办挖掘 / 关键词盯梢 / 情绪变化 / 自定义 prompt，结果进应用内收件箱（markdown）。纯本地 App 调度，只在打开时执行；关闭期间错过的下次打开补跑一次（不堆积）。
+
+任务字段：`task_type`（`summary`/`todo`/`watch`/`mood`/`custom`）、`target_kind`（`contact`/`group`/`all_private`/`all_group`）+ `target_id`/`target_name`、`schedule_kind`（`daily`/`weekly`/`interval`）+ `time_of_day`/`weekday`/`interval_hours`、`enabled`。
+
+### `GET /api/tasks`
+
+任务列表，每条带 `last_run`（最近一次运行）。返回 `{ "tasks": [...] }`。
+
+### `POST /api/tasks`
+
+创建任务。Body 为任务定义；后端校验并算出 `next_run_at`，返回创建后的完整任务。
+
+### `PUT /api/tasks/:id`
+
+更新任务（调度相关字段变动会重算 `next_run_at`）。任务不存在返回 404。
+
+### `DELETE /api/tasks/:id`
+
+删除任务。返回 `{ "ok": true }`。
+
+### `POST /api/tasks/:id/run-now`
+
+立即同步执行一次，返回本次 `run`。若已有任务在执行返回 409。
+
+### `GET /api/tasks/:id/runs?limit=30`
+
+某任务的运行历史（`limit` 默认 30、上限 200）。返回 `{ "runs": [...] }`。
+
+### `GET /api/tasks/feed?limit=`
+
+收件箱：跨任务最近运行结果 + 未读数。返回 `{ "runs": [...], "unread": <int> }`。
+
+### `POST /api/tasks/feed/read`
+
+把收件箱全部标记为已读。返回 `{ "ok": true }`。
 
 
 ## AI 分析

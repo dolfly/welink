@@ -68,7 +68,8 @@ description: WeLink 的完整功能清单 —— AI 能力 / 数据分析 / 关�
 <div class="feat-card"><div class="icon">📊</div><h4>群聊活跃度对比</h4><p>同时选中多个群对比消息量、成员数、日均消息、人均消息。</p></div>
 <div class="feat-card"><div class="icon">💕</div><h4>群内「我的 CP」</h4><p>扫引用消息（refermsg）列出跟我双向引用互动最多的成员 Top 3。比 @ 或消息数更能识别隐形聊友。</p></div>
 <div class="feat-card"><div class="icon">📈</div><h4>群聊列表四维</h4><p>每行带上我的排名 / 占比 / 近 30 天消息 / 活跃趋势箭头，以及我自己的最后发言时间，区分「群还活着但我潜水了」vs「整个群都沉了」。</p></div>
-<div class="feat-card"><div class="icon">🎬</div><h4>群聊回放播放器</h4><p>按最近 N 条 / 日期范围加载群消息，6 档倍速按真实时间间隔回放，同发言人合并头像 + 日期分割线。</p></div>
+<div class="feat-card"><div class="icon">👤</div><h4>群友画像</h4><p>点成员榜里任意成员（不限好友）查看 TA 的群内专属画像：群内排名 / 消息占比 / 活跃天数 / 深夜发言比例、24h 时段分布、周分布、近一年月度趋势、消息类型分布、TA 的高频词、最近发言样本。好友可一键跳私聊看「完整分析」。</p></div>
+<div class="feat-card"><div class="icon">🎬</div><h4>群聊回放播放器</h4><p>按最近 N 条 / 日期范围加载群消息，7 档倍速（实时 ~ 200×）按真实时间间隔回放，同发言人合并头像 + 日期分割线。支持全屏回放（Esc 退出）、智能节奏（冷场跳过、密集放慢）、快进步长可切 3/5/10 条；空格播放/暂停、→ 快进。</p></div>
 <div class="feat-card"><div class="icon">⚡</div><h4>群号称卡</h4><p>规则派生 2-4 条群 MBTI 标签：深夜话唠 / 工作日正午群 / 表情包战场 / 链接集散地 / 红包雨 / 潜水员联盟 等。零 LLM。</p></div>
 <div class="feat-card"><div class="icon">🕐</div><h4>时钟指纹</h4><p>7×24 热图徽章，log 压缩着色。一眼识别工作群作息 / 深夜局 / 周末亲友群三种完全不同的"群人格"。</p></div>
 <div class="feat-card"><div class="icon">📊</div><h4>群影响力指数</h4><p>我发言后 30 分钟内有人回应的比例 vs 群基线，0-100 分。看你在哪个群更"中心"。</p></div>
@@ -82,6 +83,7 @@ description: WeLink 的完整功能清单 —— AI 能力 / 数据分析 / 关�
 
 <div class="feat-grid">
 <div class="feat-card"><div class="icon">📰</div><h4>每日社交简报</h4><p>首页左侧 Tab 「今日简报」，看昨天的社交摘要：总消息量、活跃联系人、高光片段、建议主动联系的人。每天懒生成 + 入库，可重生成。</p></div>
+<div class="feat-card"><div class="icon">⏰</div><h4>定时任务</h4><p>侧边栏 Tab「定时任务」（未读红点角标）。写指令 + 选会话 + 选周期，系统定时跑 LLM 做总结 / 待办挖掘 / 关键词盯梢 / 情绪变化 / 自定义 prompt，结果进应用内收件箱（markdown）。纯本地调度，只在打开时执行，错过的补跑一次。</p></div>
 <div class="feat-card"><div class="icon">❄️</div><h4><a href="./labs#_10-断联预警（v0-2-x-新增）">断联预警</a></h4><p>静默 ≥ 30 天的老朋友 Top 30，三档分级（30+/90+/180+ 天）+ 三张"之最"卡：静默最久的高频好友 / 历史聊得最多但已断联 / 认识最久且当前断联。</p></div>
 <div class="feat-card"><div class="icon">🎂</div><h4>纪念日提醒</h4><p>首页顶部聚合 4 类当天命中：认识 N 周年 / 自动检测生日 / 0 天整数里程碑 / 自定义纪念日。单条点击直接打开联系人。</p></div>
 </div>
@@ -141,7 +143,7 @@ description: WeLink 的完整功能清单 —— AI 能力 / 数据分析 / 关�
 <div class="feat-grid">
 <div class="feat-card"><div class="icon">🔗</div><h4>链接收藏夹</h4><p>自动扫描所有聊天中的链接，按域名聚合，支持搜索和 CSV 导出。</p></div>
 <div class="feat-card"><div class="icon">🔍</div><h4>全局搜索</h4><p>跨联系人与群聊搜索，关键词高亮，热门推荐，点击消息弹出当天完整对话。</p></div>
-<div class="feat-card"><div class="icon">🎬</div><h4>聊天回放</h4><p>选择联系人和时间范围，按真实时间间隔回放聊天记录，6 档倍速控制。</p></div>
+<div class="feat-card"><div class="icon">🎬</div><h4>聊天回放</h4><p>选择联系人和时间范围，按真实时间间隔回放聊天记录，7 档倍速（实时 ~ 200×）。支持全屏回放（Esc 退出）、智能节奏（冷场跳过、密集放慢）、快进步长可切 3/5/10 条；空格播放/暂停、→ 快进。</p></div>
 <div class="feat-card"><div class="icon">📅</div><h4>年度社交回顾</h4><p>Spotify Wrapped 风格，分页卡片展示年度 Top5、活跃月、深夜时光、新朋友。</p></div>
 <div class="feat-card"><div class="icon">✏️</div><h4>自定义 Prompt</h4><p>所有 AI 功能的 System Prompt 完全透明可编辑，支持变量替换。</p></div>
 <div class="feat-card"><div class="icon">🖥️</div><h4>多平台支持</h4><p>Docker + macOS App + Windows App + MCP Server（Claude Code 集成）。</p></div>
@@ -153,7 +155,7 @@ description: WeLink 的完整功能清单 —— AI 能力 / 数据分析 / 关�
 
 <div class="feat-grid">
 <div class="feat-card"><div class="icon">⌨️</div><h4>命令面板（⌘K）</h4><p>任意页面按 ⌘K 搜索联系人、群聊、AI 对话历史，触发备份 / 诊断 / 刷新索引等动作。空查询展示最近打开。</p></div>
-<div class="feat-card"><div class="icon">🔢</div><h4>⌘1..⌘9 Tab 快捷键</h4><p>一键跳转到任意主 Tab：⌘1 首页 · ⌘2 统计 · ⌘3 联系人 · ⌘4 群聊 · ⌘5 搜索 · ⌘6 时间线 · ⌘7 日历 · ⌘8 Skills · ⌘9 设置。</p></div>
+<div class="feat-card"><div class="icon">🔢</div><h4>⌘1..⌘9 Tab 快捷键</h4><p>一键跳转到前 9 个主 Tab：⌘1 首页 · ⌘2 今日简报 · ⌘3 统计 · ⌘4 联系人 · ⌘5 群聊 · ⌘6 搜索 · ⌘7 日历 · ⌘8 纪念日 · ⌘9 Skills。定时任务 / AI 画廊等 Tab 走侧边栏点选，无 ⌘ 绑定。</p></div>
 <div class="feat-card"><div class="icon">🩺</div><h4>一键诊断</h4><p>设置页 → 诊断：数据目录健康 / 索引状态 / LLM 探活 / 磁盘占用。右上角可复制为 Markdown 直接贴 issue。</p></div>
 <div class="feat-card"><div class="icon">💾</div><h4>AI 数据备份 / 恢复</h4><p>Skills、聊天历史、记忆一键导出为 .db 快照（VACUUM INTO，自洽无损）。换机 / 重装前先备份，不会丢 AI 工作。</p></div>
 <div class="feat-card"><div class="icon">👥</div><h4>多账号快速切换</h4><p>把多个 decrypted/ 目录作为 profile 保存，下拉切换即热替换，无需重启。</p></div>

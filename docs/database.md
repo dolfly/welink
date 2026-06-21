@@ -249,3 +249,45 @@ t, _ := time.ParseInLocation("2006-01-02", date, CST)
 dayStart := t.Unix()          // 当天 00:00:00
 dayEnd   := dayStart + 86400  // 次日 00:00:00
 ```
+
+
+## WeLink 自建表（ai_analysis.db）
+
+以上为 WeChat 解密库（只读）。WeLink 自己的应用数据写在独立的 `ai_analysis.db` 里，不污染原始库。下列为「定时任务」功能用到的两张表。
+
+### 表：`scheduled_tasks` — 任务定义
+
+| 列名 | 类型 | 说明 |
+|------|------|------|
+| `id` | INTEGER PK | 自增任务 ID |
+| `name` | TEXT | 任务名 |
+| `task_type` | TEXT | 任务类型：`summary` 定时总结 / `todo` 待办挖掘 / `watch` 关键词盯梢 / `mood` 情绪变化 / `custom` 自定义 prompt |
+| `prompt` | TEXT | 用户指令 / 关注内容 |
+| `target_kind` | TEXT | 分析范围：`contact` 某私聊 / `group` 某群 / `all_private` 全部私聊 / `all_group` 全部群聊 |
+| `target_id` | TEXT | 会话 wxid（`all_*` 时为空） |
+| `target_name` | TEXT | 展示名快照 |
+| `schedule_kind` | TEXT | 周期：`daily` 每天 / `weekly` 每周几 / `interval` 每 N 小时 |
+| `time_of_day` | TEXT | `HH:MM`（daily/weekly 用） |
+| `weekday` | INTEGER | 0=周日…6=周六（weekly 用） |
+| `interval_hours` | INTEGER | 间隔小时数（interval 用） |
+| `enabled` | INTEGER | 是否启用（1/0） |
+| `last_run_at` | INTEGER | 上次运行时间（Unix 秒，0=从未） |
+| `next_run_at` | INTEGER | 下次计划运行时间（Unix 秒） |
+| `created_at` | INTEGER | 创建时间（Unix 秒） |
+
+### 表：`task_runs` — 运行历史
+
+| 列名 | 类型 | 说明 |
+|------|------|------|
+| `id` | INTEGER PK | 自增运行 ID |
+| `task_id` | INTEGER | 关联 `scheduled_tasks.id` |
+| `status` | TEXT | `success` / `error` / `skipped` |
+| `result` | TEXT | 本次结果（markdown） |
+| `error` | TEXT | 失败原因（status=error 时） |
+| `msg_count` | INTEGER | 本次窗口分析的消息条数 |
+| `window_from` | INTEGER | 分析时间窗起点（Unix 秒） |
+| `window_to` | INTEGER | 分析时间窗终点（Unix 秒） |
+| `read` | INTEGER | 收件箱是否已读（1/0） |
+| `created_at` | INTEGER | 运行时间（Unix 秒） |
+
+索引：`idx_task_runs_task (task_id, created_at DESC)`（按任务查历史）、`idx_task_runs_created (created_at DESC)`（收件箱全局倒序）。

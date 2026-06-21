@@ -20,6 +20,8 @@ func swaggerSpec() []byte {
     { "name": "联系人", "description": "好友统计与分析" },
     { "name": "关系预测", "description": "4 档趋势 + 建议主动联系 + AI 开场白" },
     { "name": "群聊", "description": "群聊分析" },
+    { "name": "实验室", "description": "创意小工具（主动指数榜 / 社交圈流动榜 / 话题图谱 等）" },
+    { "name": "定时任务", "description": "定时跑 LLM 总结/挖掘，结果进应用内收件箱" },
     { "name": "有趣发现", "description": "趣味统计卡片" },
     { "name": "日历", "description": "时光机 / 日历 / 纪念日" },
     { "name": "搜索", "description": "消息全文搜索" },
@@ -726,6 +728,21 @@ func swaggerSpec() []byte {
         }
       }
     },
+    "/groups/member-detail": {
+      "get": {
+        "tags": ["群聊"],
+        "summary": "获取群成员的群内专属画像",
+        "description": "点群成员榜里任意成员（不限好友）查看 TA 的群内画像：群内排名/消息占比/活跃天数/深夜发言比例、24h 时段分布、周分布、近一年月度趋势、消息类型分布、TA 的高频词、最近发言样本。好友会附带可跳私聊「完整分析」的标记。",
+        "parameters": [
+          { "name": "username", "in": "query", "required": true, "schema": { "type": "string" }, "description": "群聊 wxid（chatroom ID）" },
+          { "name": "member",   "in": "query", "required": true, "schema": { "type": "string" }, "description": "成员 wxid" }
+        ],
+        "responses": {
+          "200": { "description": "成员群内画像" },
+          "400": { "description": "缺少 username 或 member 参数" }
+        }
+      }
+    },
     "/databases": {
       "get": {
         "tags": ["数据库"],
@@ -1300,6 +1317,174 @@ func swaggerSpec() []byte {
         "tags": ["锁屏"], "summary": "修改自动锁时长 / 启动锁定开关",
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "auto_lock_minutes": { "type": "integer", "enum": [0, 30, 60, 120] }, "lock_on_startup": { "type": "boolean" } } } } } },
         "responses": { "200": { "description": "{ ok: true }" } }
+      }
+    },
+    "/labs/initiative": {
+      "get": {
+        "tags": ["实验室"],
+        "summary": "主动指数榜",
+        "description": "把消息按时间走一遍，距上一条超过 4 小时算开启一段新对话，记这段第一条发言者一次「主动开场」。三个视角排行：你主动找的人 / 主动找你的人 / 最不对等。零 LLM、30 分钟缓存。",
+        "parameters": [
+          { "name": "refresh", "in": "query", "required": false, "schema": { "type": "string", "example": "1" }, "description": "传 1 强制重算" }
+        ],
+        "responses": {
+          "200": { "description": "主动指数榜结果" }
+        }
+      }
+    },
+    "/labs/social-flow": {
+      "get": {
+        "tags": ["实验室"],
+        "summary": "社交圈年度流动榜",
+        "description": "把每个私聊「今年 12 个月」和「去年同期 12 个月」两个滑动窗口的消息量对比，给每个人贴流动标签：新晋核心 / 悄然淡出 / 逆袭回归 / 全员总览。两年合计 ≥ 30 条才入榜。零 LLM、30 分钟缓存。",
+        "parameters": [
+          { "name": "refresh", "in": "query", "required": false, "schema": { "type": "string", "example": "1" }, "description": "传 1 强制重算" }
+        ],
+        "responses": {
+          "200": { "description": "社交圈流动榜结果" }
+        }
+      }
+    },
+    "/labs/topic-map": {
+      "post": {
+        "tags": ["实验室"],
+        "summary": "话题图谱（AI 聚类）",
+        "description": "扫消息量 Top 60 私聊抽跨联系人高频词（本地，仅词不含原文），再交给 LLM 聚成 5-8 个带名字 + emoji 的主题。跟随顶部全局时间范围，按 profile 缓存 30 分钟。",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "profile_id": { "type": "string", "description": "缓存分桶用的 profile 标识" },
+                  "refresh":    { "type": "boolean", "description": "强制重算" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "话题图谱结果" }
+        }
+      }
+    },
+    "/tasks": {
+      "get": {
+        "tags": ["定时任务"],
+        "summary": "任务列表",
+        "description": "返回所有定时任务，每条带 last_run（最近一次运行）。",
+        "responses": {
+          "200": { "description": "{ tasks: [...] }" }
+        }
+      },
+      "post": {
+        "tags": ["定时任务"],
+        "summary": "创建定时任务",
+        "description": "写指令 + 选目标会话 + 选周期。后端校验并算出 next_run_at，返回创建后的完整任务。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name":           { "type": "string", "description": "任务名" },
+                  "task_type":      { "type": "string", "enum": ["summary", "todo", "watch", "mood", "custom"], "description": "定时总结 / 待办挖掘 / 关键词盯梢 / 情绪变化 / 自定义 prompt" },
+                  "prompt":         { "type": "string", "description": "用户指令 / 关注内容" },
+                  "target_kind":    { "type": "string", "enum": ["contact", "group", "all_private", "all_group"], "description": "某私聊 / 某群 / 全部私聊 / 全部群聊" },
+                  "target_id":      { "type": "string", "description": "会话 wxid（all_* 时为空）" },
+                  "target_name":    { "type": "string", "description": "展示名快照" },
+                  "schedule_kind":  { "type": "string", "enum": ["daily", "weekly", "interval"], "description": "每天 / 每周几 / 每 N 小时" },
+                  "time_of_day":    { "type": "string", "example": "09:00", "description": "HH:MM（daily/weekly）" },
+                  "weekday":        { "type": "integer", "description": "0=周日…6=周六（weekly）" },
+                  "interval_hours": { "type": "integer", "description": "间隔小时数（interval）" },
+                  "enabled":        { "type": "boolean" }
+                },
+                "required": ["name", "task_type", "target_kind", "schedule_kind"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "创建后的完整任务" },
+          "400": { "description": "参数错误" }
+        }
+      }
+    },
+    "/tasks/{id}": {
+      "put": {
+        "tags": ["定时任务"],
+        "summary": "更新定时任务",
+        "description": "调度相关字段变动会重算 next_run_at。",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": {
+          "200": { "description": "更新后的任务" },
+          "400": { "description": "参数错误" },
+          "404": { "description": "任务不存在" }
+        }
+      },
+      "delete": {
+        "tags": ["定时任务"],
+        "summary": "删除定时任务",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "{ ok: true }" }
+        }
+      }
+    },
+    "/tasks/{id}/run-now": {
+      "post": {
+        "tags": ["定时任务"],
+        "summary": "立即执行一次",
+        "description": "同步执行并返回本次 run。若已有任务在执行返回 409。",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "本次运行结果 run" },
+          "404": { "description": "任务不存在" },
+          "409": { "description": "有任务正在执行中" }
+        }
+      }
+    },
+    "/tasks/{id}/runs": {
+      "get": {
+        "tags": ["定时任务"],
+        "summary": "某任务的运行历史",
+        "parameters": [
+          { "name": "id",    "in": "path",  "required": true,  "schema": { "type": "integer" } },
+          { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "default": 30, "maximum": 200 } }
+        ],
+        "responses": {
+          "200": { "description": "{ runs: [...] }" }
+        }
+      }
+    },
+    "/tasks/feed": {
+      "get": {
+        "tags": ["定时任务"],
+        "summary": "收件箱（跨任务最近结果 + 未读数）",
+        "parameters": [
+          { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "maximum": 200 } }
+        ],
+        "responses": {
+          "200": { "description": "{ runs: [...], unread: <int> }" }
+        }
+      }
+    },
+    "/tasks/feed/read": {
+      "post": {
+        "tags": ["定时任务"],
+        "summary": "收件箱全部标记已读",
+        "responses": {
+          "200": { "description": "{ ok: true }" }
+        }
       }
     }
   },
