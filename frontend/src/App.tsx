@@ -32,6 +32,7 @@ import { useDarkMode } from './hooks/useDarkMode';
 // ─── 懒加载的 tab 页与大 modal ───────────────────────────────────────────────
 // 切到对应 tab / 打开 modal 才下载对应 chunk；首屏 JS 大幅缩水
 const DailyDigestPage    = lazy(() => import('./components/dashboard/DailyDigestPage').then(m => ({ default: m.DailyDigestPage })));
+const RelationshipInboxPage = lazy(() => import('./components/inbox/RelationshipInboxPage').then(m => ({ default: m.RelationshipInboxPage })));
 const StatsPage          = lazy(() => import('./components/dashboard/StatsPage').then(m => ({ default: m.StatsPage })));
 const ContactsPage       = lazy(() => import('./components/dashboard/ContactsPage').then(m => ({ default: m.ContactsPage })));
 const URLCollectionPage  = lazy(() => import('./components/dashboard/URLCollectionPage').then(m => ({ default: m.URLCollectionPage })));
@@ -88,7 +89,7 @@ function AppInner() {
 
   // State — 从 URL hash 恢复当前 tab + 联系人/群聊弹窗
   // hash 格式：#/stats  #/stats/contact/wxid_abc  #/groups/group/xxx@chatroom
-  const VALID_TABS: TabType[] = ['dashboard', 'digest', 'stats', 'contacts', 'db', 'groups', 'search', 'calendar', 'anniversary', 'urls', 'skills', 'labs', 'gallery', 'export', 'memory', 'tasks', 'settings'];
+  const VALID_TABS: TabType[] = ['dashboard', 'inbox', 'digest', 'stats', 'contacts', 'db', 'groups', 'search', 'calendar', 'anniversary', 'urls', 'skills', 'labs', 'gallery', 'export', 'memory', 'tasks', 'settings'];
 
   const parseHash = (): { tab: TabType; contactId?: string; groupId?: string } => {
     const raw = window.location.hash.replace('#/', '').replace('#', '');
@@ -184,7 +185,7 @@ function AppInner() {
   const [releaseChecked, setReleaseChecked] = useState(false);
   useEffect(() => {
     // ⌘1..⌘9 映射到 VALID_TABS 的前 9 项；顺序对应 Sidebar 上的常用 tab
-    const TAB_ORDER: TabType[] = ['dashboard', 'digest', 'stats', 'contacts', 'groups', 'search', 'calendar', 'anniversary', 'skills', 'settings'];
+    const TAB_ORDER: TabType[] = ['dashboard', 'inbox', 'digest', 'stats', 'contacts', 'groups', 'search', 'calendar', 'anniversary', 'settings'];
     const onKey = (e: KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey)) return;
       // 在输入框里按 ⌘1 之类不拦截（浏览器默认也会被某些组件拦截）
@@ -520,7 +521,7 @@ function AppInner() {
     <PrivacyModeContext.Provider value={{ privacyMode, setPrivacyMode }}>
     <div className="flex h-screen dk-page bg-[#f8f9fb] dk-text text-[#1d1d1f] font-sans overflow-hidden">
       {/* Sidebar */}
-      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} dark={dark} onToggleDark={toggleDark} badges={{ tasks: taskUnread }} />
+      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} dark={dark} onToggleDark={toggleDark} badges={{ inbox: taskUnread, tasks: taskUnread }} />
 
       {/* Main Content */}
       <main className={`flex-1 overflow-y-auto dk-page ${activeTab === 'dashboard' ? 'pb-16 sm:pb-0' : 'p-4 sm:p-10 pb-20 sm:pb-10'}`}>
@@ -534,6 +535,13 @@ function AppInner() {
             onGroupClick={(g) => setSelectedGroup(g)}
             onNavigateToAnniversary={() => setActiveTab('anniversary')}
             onOpenSettings={() => setActiveTab('settings')}
+          />
+        ) : activeTab === 'inbox' ? (
+          <RelationshipInboxPage
+            contacts={contacts}
+            onContactClick={handleContactClick}
+            onNavigateTasks={() => setActiveTab('tasks')}
+            onNavigateAnniversary={() => setActiveTab('anniversary')}
           />
         ) : activeTab === 'digest' ? (
           <DailyDigestPage contacts={contacts} onContactClick={handleContactClick} />
