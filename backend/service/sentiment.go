@@ -411,6 +411,21 @@ func min64(a, b float64) float64 {
 // GetSentimentAnalysis 对指定联系人的文本消息做情感分析
 // 月度 count 包含所有文本消息（含中性），score 只来自有情感词的消息
 func (s *ContactService) GetSentimentAnalysis(username string, includeMine bool) *SentimentResult {
+	cacheKey := fmt.Sprintf("%s|mine=%t", username, includeMine)
+	s.contactAnalysisMu.RLock()
+	if cached := s.sentimentCache[cacheKey]; cached != nil {
+		s.contactAnalysisMu.RUnlock()
+		return cached
+	}
+	s.contactAnalysisMu.RUnlock()
+	store := func(result *SentimentResult) *SentimentResult {
+		s.contactAnalysisMu.Lock()
+		if s.sentimentCache == nil { s.sentimentCache = make(map[string]*SentimentResult) }
+		s.sentimentCache[cacheKey] = result
+		s.contactAnalysisMu.Unlock()
+		return result
+	}
+
 	tableName := db.GetTableName(username)
 	tw := s.timeWhere()
 
@@ -439,7 +454,7 @@ func (s *ContactService) GetSentimentAnalysis(username string, includeMine bool)
 
 	totalPos, totalNeg, totalNeutral := 0, 0, 0
 
-	for _, mdb := range s.dbMgr.MessageDBs {
+	for _, mdb := range s.msgRepo.DBsForUsername(username) {
 		rows, err := mdb.Query(query)
 		if err != nil {
 			continue
@@ -484,13 +499,13 @@ func (s *ContactService) GetSentimentAnalysis(username string, includeMine bool)
 	}
 
 	if len(buckets) == 0 {
-		return &SentimentResult{
+		return store(&SentimentResult{
 			Monthly:  []SentimentPoint{},
 			Overall:  0.5,
 			Positive: 0,
 			Negative: 0,
 			Neutral:  0,
-		}
+		})
 	}
 
 	// 组装月度数据
@@ -524,13 +539,13 @@ func (s *ContactService) GetSentimentAnalysis(username string, includeMine bool)
 		overall = math2dp(totalScore / float64(totalScored))
 	}
 
-	return &SentimentResult{
+	return store(&SentimentResult{
 		Monthly:  points,
 		Overall:  overall,
 		Positive: totalPos,
 		Negative: totalNeg,
 		Neutral:  totalNeutral,
-	}
+	})
 }
 
 func math2dp(f float64) float64 {

@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { contactsApi } from '../services/api';
 import type { ContactStats, WordCount } from '../types';
 
-export const useContacts = (autoRefresh = true, interval = 15000) => {
+export const useContacts = (enabled = true, refreshInterval = 0) => {
   const [contacts, setContacts] = useState<ContactStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -26,13 +26,14 @@ export const useContacts = (autoRefresh = true, interval = 15000) => {
   }, []);
 
   useEffect(() => {
-    fetchContacts();
+    if (!enabled) return;
+    void fetchContacts();
 
-    if (autoRefresh) {
-      const timer = setInterval(fetchContacts, interval);
+    if (refreshInterval > 0) {
+      const timer = setInterval(fetchContacts, refreshInterval);
       return () => clearInterval(timer);
     }
-  }, [fetchContacts, autoRefresh, interval]);
+  }, [fetchContacts, enabled, refreshInterval]);
 
   return {
     contacts,

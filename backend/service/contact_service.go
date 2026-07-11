@@ -167,6 +167,20 @@ func classifyMsgType(lt int, content string) string {
 	}
 }
 
+// needsDecodedContent reports whether message_content affects aggregate
+// classification/statistics. Images, videos, voice messages and stickers are
+// classified entirely by local_type, so decoding those blobs only creates CPU
+// work and allocations. Text needs content statistics/system filtering and
+// type 49 needs its XML payload to distinguish links, transfers and quotes.
+func needsDecodedContent(localType int) bool {
+	switch localType & 0xFFFF {
+	case 1, 49:
+		return true
+	default:
+		return false
+	}
+}
+
 // AnalysisParams 分析参数，支持运行时热加载。
 type AnalysisParams struct {
 	Timezone             string
@@ -200,6 +214,7 @@ type ContactService struct {
 	lastInitErr      string
 	groupListCache       []GroupInfo                      // 群聊列表缓存
 	groupListReady       bool
+	groupListWait        chan struct{}                    // 非 nil 表示已有 goroutine 正在构建群列表
 	groupDetailCache     map[string]*GroupDetail          // 群聊详情内存缓存（lazy load）
 	groupDetailMu        sync.RWMutex
 	groupDetailComputing map[string]bool                  // 正在后台计算中的群聊
@@ -228,6 +243,10 @@ type ContactService struct {
 	latencyByUserMu    sync.RWMutex
 	activeDatesCache   map[string][]string // 微信视图用：username -> 有记录的日期列表（静态库不变，长期缓存）
 	activeDatesMu      sync.RWMutex
+	contactAnalysisMu  sync.RWMutex
+	wordCloudCache     map[string][]WordCount
+	contactDetailCache map[string]*ContactDetail
+	sentimentCache     map[string]*SentimentResult
 }
 
 // MonthBucket 单月消息桶，用于关系预测的主动占比分析
@@ -395,6 +414,11 @@ func (s *ContactService) Reinitialize(from, to int64) {
 	s.urlCollectionMu.Lock()
 	s.urlCollectionCache = nil
 	s.urlCollectionMu.Unlock()
+	s.contactAnalysisMu.Lock()
+	s.wordCloudCache = nil
+	s.contactDetailCache = nil
+	s.sentimentCache = nil
+	s.contactAnalysisMu.Unlock()
 
 	go func() {
 		// panic 兜底：避免 performAnalysis 崩溃后 isInitialized 永远卡在 false，前端转圈无尽头
@@ -547,6 +571,8 @@ func (s *ContactService) performAnalysisCtx(ctx context.Context) {
 			var globalLastTs int64 = 0
 			var lateNightCnt int64
 			typeCounts := make(map[string]int)
+			localDaily := make(map[string]int)
+			localHourly := [24]int{}
 			monthly := make(map[string]MonthBucket)
 			recentCutoff := time.Now().In(s.tz).AddDate(0, -1, 0)
 			var totalTextLen, textCount int64
@@ -559,17 +585,20 @@ func (s *ContactService) performAnalysisCtx(ctx context.Context) {
 			}
 			var transitions []tsKind
 
-			for _, mdb := range s.dbMgr.MessageDBs {
+			for _, mdb := range s.msgRepo.DBsForUsername(c.Username) {
 				var contactRowID int64 = -1
 				mdb.QueryRow(fmt.Sprintf("SELECT rowid FROM Name2Id WHERE user_name = %q", c.Username)).Scan(&contactRowID)
 
-				mRows, err := mdb.Query(fmt.Sprintf("SELECT local_type, create_time, message_content, COALESCE(WCDB_CT_message_content,0), COALESCE(real_sender_id,0) FROM [%s]%s", tableName, timeWhere))
+				mRows, err := mdb.Query(fmt.Sprintf("SELECT local_type, create_time, CASE WHEN (local_type & 65535) IN (1,49) THEN message_content END, COALESCE(WCDB_CT_message_content,0), COALESCE(real_sender_id,0) FROM [%s]%s", tableName, timeWhere))
 				if err != nil { continue }
 				for mRows.Next() {
 					var lt int; var ts int64; var rawContent []byte; var ct int64; var senderID int64
 					mRows.Scan(&lt, &ts, &rawContent, &ct, &senderID)
-					content := decodeGroupContent(rawContent, ct)
-					if lt == 10000 { ext.RecallCount++; continue }
+					if lt&0xFFFF == 10000 { ext.RecallCount++; continue }
+					content := ""
+					if needsDecodedContent(lt) {
+						content = decodeGroupContent(rawContent, ct)
+					}
 					ext.TotalMessages++
 					isMine := contactRowID < 0 || senderID != contactRowID
 					if isMine {
@@ -584,7 +613,8 @@ func (s *ContactService) performAnalysisCtx(ctx context.Context) {
 					dt := time.Unix(ts, 0).In(s.tz)
 					h := dt.Hour()
 					if h >= s.params.LateNightStartHour && h < s.params.LateNightEndHour { lateNightCnt++ }
-					mu.Lock(); globalDaily[dt.Format("2006-01-02")]++; globalHourly[h]++; mu.Unlock()
+					localDaily[dt.Format("2006-01-02")]++
+					localHourly[h]++
 					mk := dt.Format("2006-01")
 					b := monthly[mk]
 					b.Total++
@@ -616,10 +646,23 @@ func (s *ContactService) performAnalysisCtx(ctx context.Context) {
 						ext.MoneyCount++
 					}
 					typeCounts[typeName]++
-					mu.Lock(); globalTypeMix[typeName]++; mu.Unlock()
 				}
 				mRows.Close()
 			}
+			// Merge per-contact aggregates once. The previous implementation took
+			// the shared mutex twice per message, which serialized workers on large
+			// histories and dominated startup time.
+			mu.Lock()
+			for day, count := range localDaily {
+				globalDaily[day] += count
+			}
+			for hour, count := range localHourly {
+				globalHourly[hour] += count
+			}
+			for typeName, count := range typeCounts {
+				globalTypeMix[typeName] += count
+			}
+			mu.Unlock()
 			if ext.TotalMessages > 0 {
 				ext.FirstMessage = s.formatTime(globalFirstTs); ext.LastMessage = s.formatTime(globalLastTs)
 				ext.FirstMessageTs = globalFirstTs; ext.LastMessageTs = globalLastTs
@@ -822,15 +865,20 @@ func (s *ContactService) AnalyzeWithFilter(from, to int64) *FilteredStats {
 			var globalLastTs int64 = 0
 			var lateNightCnt int64
 			typeCounts := make(map[string]int)
+			localDaily := make(map[string]int)
+			localHourly := [24]int{}
 
-			for _, mdb := range s.dbMgr.MessageDBs {
-				query := fmt.Sprintf("SELECT local_type, create_time, message_content, COALESCE(WCDB_CT_message_content,0) FROM [%s]%s", tableName, timeWhere)
+			for _, mdb := range s.msgRepo.DBsForUsername(c.Username) {
+				query := fmt.Sprintf("SELECT local_type, create_time, CASE WHEN (local_type & 65535) IN (1,49) THEN message_content END, COALESCE(WCDB_CT_message_content,0) FROM [%s]%s", tableName, timeWhere)
 				mRows, err := mdb.Query(query)
 				if err != nil { continue }
 				for mRows.Next() {
 					var lt int; var ts int64; var rawContent []byte; var ct int64
 					mRows.Scan(&lt, &ts, &rawContent, &ct)
-					content := decodeGroupContent(rawContent, ct)
+					content := ""
+					if needsDecodedContent(lt) {
+						content = decodeGroupContent(rawContent, ct)
+					}
 					ext.TotalMessages++
 
 					if ts < globalFirstTs { globalFirstTs = ts }
@@ -839,7 +887,8 @@ func (s *ContactService) AnalyzeWithFilter(from, to int64) *FilteredStats {
 					dt := time.Unix(ts, 0).In(s.tz)
 					h := dt.Hour()
 					if h >= s.params.LateNightStartHour && h < s.params.LateNightEndHour { lateNightCnt++ }
-					mu.Lock(); globalDaily[dt.Format("2006-01-02")]++; globalHourly[h]++; mu.Unlock()
+					localDaily[dt.Format("2006-01-02")]++
+					localHourly[h]++
 
 					typeName := classifyMsgType(lt, content)
 					if typeName == "文本" {
@@ -851,10 +900,14 @@ func (s *ContactService) AnalyzeWithFilter(from, to int64) *FilteredStats {
 						ext.EmojiCnt++
 					}
 					typeCounts[typeName]++
-					mu.Lock(); globalTypeMix[typeName]++; mu.Unlock()
 				}
 				mRows.Close()
 			}
+			mu.Lock()
+			for day, count := range localDaily { globalDaily[day] += count }
+			for hour, count := range localHourly { globalHourly[hour] += count }
+			for typeName, count := range typeCounts { globalTypeMix[typeName] += count }
+			mu.Unlock()
 			if ext.TotalMessages > 0 {
 				ext.FirstMessage = s.formatTime(globalFirstTs); ext.LastMessage = s.formatTime(globalLastTs)
 				ext.FirstMessageTs = globalFirstTs; ext.LastMessageTs = globalLastTs
@@ -915,6 +968,13 @@ func (s *ContactService) AnalyzeWithFilter(from, to int64) *FilteredStats {
 
 // GetContactDetail 按需深度分析单个联系人（小时分布、周分布、日历热力、深夜、红包、主动率）
 func (s *ContactService) GetContactDetail(username string) *ContactDetail {
+	s.contactAnalysisMu.RLock()
+	if cached := s.contactDetailCache[username]; cached != nil {
+		s.contactAnalysisMu.RUnlock()
+		return cached
+	}
+	s.contactAnalysisMu.RUnlock()
+
 	tableName := db.GetTableName(username)
 	detail := &ContactDetail{
 		DailyHeatmap:      make(map[string]int),
@@ -945,18 +1005,21 @@ func (s *ContactService) GetContactDetail(username string) *ContactDetail {
 
 	timeWhere := s.timeWhere()
 	orderBy := " ORDER BY create_time ASC"
-	for _, mdb := range s.dbMgr.MessageDBs {
+	for _, mdb := range s.msgRepo.DBsForUsername(username) {
 		// 每个 DB 单独查联系人 rowid
 		var contactRowID int64 = -1
 		mdb.QueryRow(fmt.Sprintf("SELECT rowid FROM Name2Id WHERE user_name = %q", username)).Scan(&contactRowID)
 
 		rows, err := mdb.Query(fmt.Sprintf(
-			"SELECT create_time, local_type, message_content, COALESCE(WCDB_CT_message_content,0), COALESCE(real_sender_id,0) FROM [%s]%s%s", tableName, timeWhere, orderBy))
+			"SELECT create_time, local_type, CASE WHEN (local_type & 65535)=49 THEN message_content END, COALESCE(WCDB_CT_message_content,0), COALESCE(real_sender_id,0) FROM [%s]%s%s", tableName, timeWhere, orderBy))
 		if err != nil { continue }
 		for rows.Next() {
 			var ts int64; var lt int; var rawContent []byte; var ct int64; var senderID int64
 			rows.Scan(&ts, &lt, &rawContent, &ct, &senderID)
-			content := decodeGroupContent(rawContent, ct)
+			content := ""
+			if lt&0xFFFF == 49 {
+				content = decodeGroupContent(rawContent, ct)
+			}
 			dt := time.Unix(ts, 0).In(s.tz)
 			h := dt.Hour()
 			w := int(dt.Weekday()) // 0=Sunday
@@ -1103,6 +1166,10 @@ func (s *ContactService) GetContactDetail(username string) *ContactDetail {
 	// 间隔分布直方图
 	detail.IntervalBuckets = intervalBuckets
 
+	s.contactAnalysisMu.Lock()
+	if s.contactDetailCache == nil { s.contactDetailCache = make(map[string]*ContactDetail) }
+	s.contactDetailCache[username] = detail
+	s.contactAnalysisMu.Unlock()
 	return detail
 }
 
@@ -2026,7 +2093,17 @@ func (s *ContactService) ExtractContactGroupMessages(contactUsername string, gro
 	return samples
 }
 
+const wordCloudMaxMessages = 20000
+
 func (s *ContactService) GetWordCloud(username string, includeMine bool) []WordCount {
+	cacheKey := fmt.Sprintf("%s|mine=%t", username, includeMine)
+	s.contactAnalysisMu.RLock()
+	if cached, ok := s.wordCloudCache[cacheKey]; ok {
+		s.contactAnalysisMu.RUnlock()
+		return cached
+	}
+	s.contactAnalysisMu.RUnlock()
+
 	tableName := db.GetTableName(username)
 	// 先收集文本，关闭 DB 连接后再分词
 	twCloud := s.timeWhere()
@@ -2039,8 +2116,11 @@ func (s *ContactService) GetWordCloud(username string, includeMine bool) []WordC
 		twCloud += fmt.Sprintf(" AND real_sender_id = (SELECT rowid FROM Name2Id WHERE user_name = %q)", username)
 	}
 	var texts []string
-	for _, mdb := range s.dbMgr.MessageDBs {
-		rows, err := mdb.Query(fmt.Sprintf("SELECT message_content, COALESCE(WCDB_CT_message_content,0) FROM [%s]%s", tableName, twCloud))
+	for _, mdb := range s.msgRepo.DBsForUsername(username) {
+		rows, err := mdb.Query(fmt.Sprintf(
+			"SELECT message_content, COALESCE(WCDB_CT_message_content,0) FROM [%s]%s ORDER BY create_time DESC LIMIT %d",
+			tableName, twCloud, wordCloudMaxMessages,
+		))
 		if err != nil { continue }
 		for rows.Next() {
 			var rawContent []byte
@@ -2082,6 +2162,11 @@ func (s *ContactService) GetWordCloud(username string, includeMine bool) []WordC
 	}
 	sort.Slice(list, func(i, j int) bool { return list[i].Count > list[j].Count })
 	if len(list) > 120 { list = list[:120] }
+	if list == nil { list = []WordCount{} }
+	s.contactAnalysisMu.Lock()
+	if s.wordCloudCache == nil { s.wordCloudCache = make(map[string][]WordCount) }
+	s.wordCloudCache[cacheKey] = list
+	s.contactAnalysisMu.Unlock()
 	return list
 }
 
@@ -2715,16 +2800,31 @@ type MyCPEntry struct {
 // GetGroups 返回所有群聊列表（含消息量），只返回有消息的群
 func (s *ContactService) GetGroups() []GroupInfo {
 	s.groupDetailMu.Lock()
-	if !s.groupListReady {
+	if s.groupListReady {
+		result := s.groupListCache
 		s.groupDetailMu.Unlock()
-		list := s.loadGroups()
-		s.groupDetailMu.Lock()
-		s.groupListCache = list
-		s.groupListReady = true
+		return result
 	}
-	result := s.groupListCache
+	if wait := s.groupListWait; wait != nil {
+		s.groupDetailMu.Unlock()
+		<-wait
+		s.groupDetailMu.Lock()
+		result := s.groupListCache
+		s.groupDetailMu.Unlock()
+		return result
+	}
+	wait := make(chan struct{})
+	s.groupListWait = wait
 	s.groupDetailMu.Unlock()
-	return result
+
+	list := s.loadGroups()
+	s.groupDetailMu.Lock()
+	s.groupListCache = list
+	s.groupListReady = true
+	s.groupListWait = nil
+	close(wait)
+	s.groupDetailMu.Unlock()
+	return list
 }
 
 func (s *ContactService) loadGroups() []GroupInfo {
@@ -2741,36 +2841,11 @@ func (s *ContactService) loadGroups() []GroupInfo {
 		groups = append(groups, r)
 	}
 
-	// 先拿 selfWxid，稍后用于计算「我的发言」相关字段
-	selfWxid := ""
-	if si := s.GetSelfInfo(); si != nil {
-		selfWxid = si.Wxid
-	}
-
 	// 近期活跃度 cutoff（相对 wall clock，不受用户时间过滤影响）
 	nowSec := time.Now().Unix()
 	cutoff30 := nowSec - 30*86400
 	cutoff3m := nowSec - 90*86400
 	cutoff6m := nowSec - 180*86400
-
-	// Name2Id（rowid → wxid）对同一个 message DB 是固定的，与具体群无关。
-	// 原实现对每个群 × 每个 DB 都重新扫一遍 Name2Id（415 群 × 10 库 = 4150 次全表扫描，
-	// 每次最多读 ~6700 行），这是 /groups 首次加载超时的主因。
-	// 这里改成在群循环外、每个 DB 只扫一次，群循环里直接复用。
-	id2wxidByDB := make([]map[int64]string, len(s.dbMgr.MessageDBs))
-	for i, mdb := range s.dbMgr.MessageDBs {
-		m := make(map[int64]string, 4096)
-		if nrows, nerr := mdb.Query("SELECT rowid, user_name FROM Name2Id"); nerr == nil {
-			for nrows.Next() {
-				var rid int64
-				var uname string
-				nrows.Scan(&rid, &uname)
-				m[rid] = uname
-			}
-			nrows.Close()
-		}
-		id2wxidByDB[i] = m
-	}
 
 	result := make([]GroupInfo, 0, len(groups))
 	var mu sync.Mutex
@@ -2786,83 +2861,43 @@ func (s *ContactService) loadGroups() []GroupInfo {
 			var firstTs int64 = 9999999999
 			var lastTs int64
 			twGroups := s.timeWhere()
-			twGroupsCount := "SELECT COUNT(*), COALESCE(MIN(create_time),0), COALESCE(MAX(create_time),0) FROM [%s]"
-			if twGroups != "" {
-				twGroupsCount = "SELECT COUNT(*), COALESCE(MIN(create_time),0), COALESCE(MAX(create_time),0) FROM [%s]" + twGroups
-			}
-			for _, mdb := range s.dbMgr.MessageDBs {
+			dbIndices := s.msgRepo.DBIndicesForUsername(g.uname)
+			var r30, r3m, p3m int64
+			countQuery := fmt.Sprintf(
+				"SELECT COUNT(*), COALESCE(MIN(create_time),0), COALESCE(MAX(create_time),0) FROM [%s]%s",
+				tableName, twGroups,
+			)
+			for _, dbIdx := range dbIndices {
+				mdb := s.dbMgr.MessageDBs[dbIdx]
 				var cnt, minTs, maxTs int64
-				err := mdb.QueryRow(fmt.Sprintf(twGroupsCount, tableName)).Scan(&cnt, &minTs, &maxTs)
-				if err == nil {
+				if err := mdb.QueryRow(countQuery).Scan(&cnt, &minTs, &maxTs); err == nil {
 					total += cnt
 					if minTs > 0 && minTs < firstTs { firstTs = minTs }
 					if maxTs > lastTs { lastTs = maxTs }
 				}
+				// 三个标量子查询都能使用 create_time 索引，不再对整张群表做 SUM/GROUP BY。
+				var v30, v3m, vp3m int64
+				trendQuery := fmt.Sprintf(
+					"SELECT (SELECT COUNT(*) FROM [%s] WHERE create_time >= %d), "+
+						"(SELECT COUNT(*) FROM [%s] WHERE create_time >= %d), "+
+						"(SELECT COUNT(*) FROM [%s] WHERE create_time >= %d AND create_time < %d)",
+					tableName, cutoff30, tableName, cutoff3m, tableName, cutoff6m, cutoff3m,
+				)
+				if err := mdb.QueryRow(trendQuery).Scan(&v30, &v3m, &vp3m); err == nil {
+					r30 += v30; r3m += v3m; p3m += vp3m
+				}
 			}
 			if total == 0 { return }
 			if firstTs == 9999999999 { firstTs = 0 }
-			// 统计每成员发言数（GROUP BY real_sender_id），替代原 DISTINCT 查询
-			// 顺手得到：发言人数、我的发言数/最后发言时间、全员排名分布
-			memberCounts := make(map[string]int64)
-			var myTotal, myLastTs int64
-			groupMemberQuery := "SELECT real_sender_id, COUNT(*), MAX(create_time) FROM [%s] WHERE real_sender_id > 0 GROUP BY real_sender_id"
-			if twGroups != "" {
-				groupMemberQuery = "SELECT real_sender_id, COUNT(*), MAX(create_time) FROM [%s]" + twGroups + " AND real_sender_id > 0 GROUP BY real_sender_id"
-			}
-			for dbIdx, mdb := range s.dbMgr.MessageDBs {
-				id2wxid := id2wxidByDB[dbIdx] // 群循环外已构建好，直接复用（只读，不会被并发修改）
-				mrows, merr := mdb.Query(fmt.Sprintf(groupMemberQuery, tableName))
-				if merr != nil { continue }
-				for mrows.Next() {
-					var sid, cnt, last int64
-					mrows.Scan(&sid, &cnt, &last)
-					if wxid, ok := id2wxid[sid]; ok && wxid != "" {
-						memberCounts[wxid] += cnt
-						if selfWxid != "" && wxid == selfWxid {
-							myTotal += cnt
-							if last > myLastTs { myLastTs = last }
-						}
-					}
-				}
-				mrows.Close()
-			}
 			// 尝试从 chatroom_member 表获取真实群成员总数
 			realMemberCount := 0
 			s.dbMgr.ContactDB.QueryRow(
 				`SELECT COUNT(*) FROM chatroom_member cm JOIN chat_room cr ON cr.id = cm.room_id WHERE cr.username = ?`,
 				g.uname).Scan(&realMemberCount)
 			if realMemberCount == 0 {
-				realMemberCount = len(memberCounts) // fallback: 用发言人数
+				realMemberCount = 0 // 群详情会计算准确的发言人数
 			}
 
-			// 我的排名（在 memberCounts 里按 count 降序找 selfWxid 位置）
-			myRank := 0
-			if myTotal > 0 {
-				for _, cnt := range memberCounts {
-					if cnt > myTotal {
-						myRank++
-					}
-				}
-				myRank++ // 1-based
-			}
-
-			// 近期活跃度：30 天 / 最近 3 月 / 前 3 月（不带用户时间过滤，始终相对 wall clock）
-			var r30, r3m, p3m int64
-			for _, mdb := range s.dbMgr.MessageDBs {
-				var v30, v3m, vp3m int64
-				err := mdb.QueryRow(fmt.Sprintf(
-					"SELECT "+
-						"COALESCE(SUM(CASE WHEN create_time >= %d THEN 1 ELSE 0 END), 0), "+
-						"COALESCE(SUM(CASE WHEN create_time >= %d THEN 1 ELSE 0 END), 0), "+
-						"COALESCE(SUM(CASE WHEN create_time >= %d AND create_time < %d THEN 1 ELSE 0 END), 0) "+
-						"FROM [%s]",
-					cutoff30, cutoff3m, cutoff6m, cutoff3m, tableName)).Scan(&v30, &v3m, &vp3m)
-				if err == nil {
-					r30 += v30
-					r3m += v3m
-					p3m += vp3m
-				}
-			}
 			trendPct := 0
 			if p3m > 0 {
 				trendPct = int((r3m - p3m) * 100 / p3m)
@@ -2877,9 +2912,6 @@ func (s *ContactService) loadGroups() []GroupInfo {
 				TotalMessages: total, MemberCount: realMemberCount,
 				FirstMessage: s.formatTime(firstTs), LastMessage: s.formatTime(lastTs),
 				FirstMessageTs: firstTs, LastMessageTs: lastTs,
-				MyMessages:      myTotal,
-				MyRank:          myRank,
-				MyLastMessageTs: myLastTs,
 				Recent30Days:    r30,
 				RecentTrendPct:  trendPct,
 			})
@@ -3738,7 +3770,8 @@ func (s *ContactService) buildSharedGroupCounts() map[string]int {
 		tableName := db.GetTableName(groupUname)
 		seenInGroup := make(map[string]bool)
 
-		for dbIdx, mdb := range s.dbMgr.MessageDBs {
+		for _, dbIdx := range s.msgRepo.DBIndicesForUsername(groupUname) {
+			mdb := s.dbMgr.MessageDBs[dbIdx]
 			var query string
 			if twFilter == "" {
 				query = fmt.Sprintf("SELECT DISTINCT real_sender_id FROM [%s]", tableName)
@@ -3992,7 +4025,8 @@ func (s *ContactService) GetCommonGroups(contactUsername string) []GroupInfo {
 	for _, g := range allGroups {
 		tableName := db.GetTableName(g.Username)
 		found := false
-		for dbIdx, mdb := range s.dbMgr.MessageDBs {
+		for _, dbIdx := range s.msgRepo.DBIndicesForUsername(g.Username) {
+			mdb := s.dbMgr.MessageDBs[dbIdx]
 			if found {
 				break
 			}

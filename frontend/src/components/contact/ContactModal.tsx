@@ -96,7 +96,6 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
   const [exportTo, setExportTo] = useState('');
   const [showExportPanel, setShowExportPanel] = useState(false);
   const [exportMsg, setExportMsg] = useState<{ ok: boolean; message: string } | null>(null);
-  const [groupsReady, setGroupsReady] = useState(false);
   const [lightbox, setLightbox] = useState(false);
 
   // AI 头像（基于聊天风格生成的抽象头像）
@@ -216,13 +215,12 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
       setSearchQuery('');
       setSearchResults([]);
       setSearchDone(false);
-      setGroupsReady(false);
       fetchWordCloud(contact.username, false);
-      fetchDetail(contact.username);
-      fetchSentiment(contact.username, false);
+      // 首屏只计算当前可见的词云。深度画像和情感分析都是全历史扫描，
+      // 等用户真正切到对应 tab 再加载，避免一次打开弹窗同时打满 SQLite。
       contactsApi.getCommonGroups(contact.username)
-        .then(groups => { setCommonGroups(groups ?? []); setGroupsReady(true); })
-        .catch(() => { setCommonGroups([]); setGroupsReady(true); });
+        .then(groups => setCommonGroups(groups ?? []))
+        .catch(() => setCommonGroups([]));
     }
   }, [contact, fetchWordCloud, fetchDetail, fetchSentiment]);
 
@@ -254,10 +252,6 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
 
   const displayName = contact.remark || contact.nickname || contact.username;
   const avatarUrl = contact.big_head_url || contact.small_head_url;
-  // 只需等共同群聊加载完（groups 和 commonGroups 同批次更新，内容出现时高度已稳定）。
-  // Canvas 在 opacity-0 容器里静默渲染，出现时通常已画好；若未画完，loading prop 短暂显示。
-  const allReady = groupsReady;
-
   return (
     <>
     <div
@@ -368,16 +362,7 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
           </button>
         </div>
 
-        {!allReady ? (
-          <div className="flex flex-col items-center justify-center gap-3" style={{ minHeight: 400 }}>
-            <Loader2 size={28} className="animate-spin text-[#07c160]" />
-            <div className="text-sm font-bold text-[#1d1d1f] dk-text">正在分析聊天记录</div>
-            <p className="text-xs text-gray-400 text-center max-w-md leading-relaxed" style={{ textWrap: 'pretty' } as React.CSSProperties}>
-              聊天记录越多分析时间越长，消息量大的联系人首次加载可能需要 1–3 分钟，请耐心等待。
-            </p>
-          </div>
-        ) : (
-          <div className="animate-in fade-in duration-200">
+        <div className="animate-in fade-in duration-200">
 
         {/* Header */}
         <div className="mb-6 sm:mb-8 pr-10 sm:pr-0 flex items-center gap-4">
@@ -671,8 +656,15 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
                 onClick={() => {
                   setTab(t);
                   if (!contact) return;
-                  if (t === 'wordcloud') fetchWordCloud(contact.username, includeMine);
-                  if (t === 'sentiment') fetchSentiment(contact.username, includeMine);
+                  if (t === 'wordcloud' && wordData.length === 0 && !isAnalysing) {
+                    fetchWordCloud(contact.username, includeMine);
+                  }
+                  if (t === 'detail' && !detail && !detailLoading) {
+                    fetchDetail(contact.username);
+                  }
+                  if (t === 'sentiment' && !sentiment && !sentimentLoading) {
+                    fetchSentiment(contact.username, includeMine);
+                  }
                   if (t === 'search') setTimeout(() => searchInputRef.current?.focus(), 50);
                 }}
                 className={`flex items-center gap-0.5 px-2 sm:px-3 py-1.5 rounded-t-xl text-[11px] sm:text-xs font-bold transition border-b-2 -mb-px ${
@@ -901,7 +893,6 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
           </div>
         )}
           </div>
-        )}
       </div>{/* end inner scroll div */}
       </div>{/* end outer rounded clip div */}
     </div>

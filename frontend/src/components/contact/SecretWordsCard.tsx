@@ -17,16 +17,21 @@ interface Props {
 
 export const SecretWordsCard: React.FC<Props> = ({ username, className = '' }) => {
   const [words, setWords] = useState<SecretWord[] | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
+    setWords(null);
+    setLoading(false);
+  }, [username]);
+
+  const load = () => {
+    if (loading) return;
     setLoading(true);
     axios.get<{ words: SecretWord[] }>('/api/contacts/secret-words', { params: { username } })
-      .then(r => { if (!cancelled) { setWords(r.data.words || []); setLoading(false); } })
-      .catch(() => { if (!cancelled) { setWords([]); setLoading(false); } });
-    return () => { cancelled = true; };
-  }, [username]);
+      .then(r => setWords(r.data.words || []))
+      .catch(() => setWords([]))
+      .finally(() => setLoading(false));
+  };
 
   // 前 50 活跃联系人的池里从来没有此词 → 最私密
   // 池里一半以上联系人都有 → 其实是常见词（idf 本就被拉到接近 0，不会入 Top，这里只是展示用）
@@ -43,7 +48,14 @@ export const SecretWordsCard: React.FC<Props> = ({ username, className = '' }) =
         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">秘语雷达 · TF-IDF</p>
       </div>
       <p className="text-[10px] text-gray-400 mb-3">跟 TA 聊得比和其他人都多的词（昵称 / 梗 / 专属话题）</p>
-      {loading ? (
+      {words === null && !loading ? (
+        <button
+          onClick={load}
+          className="w-full rounded-xl border border-dashed border-[#8b5cf6]/30 px-3 py-2 text-xs font-semibold text-[#8b5cf6] hover:bg-[#8b5cf6]/5 transition-colors"
+        >
+          点击计算秘语
+        </button>
+      ) : loading ? (
         <div className="flex items-center gap-2 py-3 text-xs text-gray-400">
           <Loader2 size={14} className="animate-spin" />
           <span>首次计算需扫描 Top 50 联系人词云，后续会命中缓存</span>

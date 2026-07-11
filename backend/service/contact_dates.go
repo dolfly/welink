@@ -33,7 +33,7 @@ func (s *ContactService) ContactActiveDates(username string) []string {
 	tableName := db.GetTableName(username)
 
 	seen := make(map[string]struct{}, 512)
-	for _, mdb := range s.dbMgr.MessageDBs {
+	for _, mdb := range s.msgRepo.DBsForUsername(username) {
 		rows, err := mdb.Query(fmt.Sprintf(
 			"SELECT create_time FROM [%s] WHERE local_type IN (1,3,34,43,47,49)",
 			tableName,

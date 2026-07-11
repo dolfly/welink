@@ -5,6 +5,26 @@ import (
 	"time"
 )
 
+func TestNeedsDecodedContent(t *testing.T) {
+	for _, tc := range []struct {
+		localType int
+		want      bool
+	}{
+		{1, true},
+		{49, true},
+		{0x10000 | 49, true},
+		{3, false},
+		{34, false},
+		{43, false},
+		{47, false},
+		{10000, false},
+	} {
+		if got := needsDecodedContent(tc.localType); got != tc.want {
+			t.Errorf("needsDecodedContent(%d) = %v, want %v", tc.localType, got, tc.want)
+		}
+	}
+}
+
 func TestIsNumeric(t *testing.T) {
 	cases := []struct {
 		s    string
@@ -15,7 +35,7 @@ func TestIsNumeric(t *testing.T) {
 		{"0", true},
 		{"abc", false},
 		{"12a", false},
-		{"", true}, // 空字符串：循环不执行，返回 true（边界）
+		{"", true},     // 空字符串：循环不执行，返回 true（边界）
 		{"１２３", false}, // 全角数字
 	}
 	for _, tc := range cases {
@@ -53,7 +73,7 @@ func TestContainsEmoji(t *testing.T) {
 		want bool
 	}{
 		{"😀", true},
-		{"⭐", true},  // 0x2B50, in Misc Symbols
+		{"⭐", true}, // 0x2B50, in Misc Symbols
 		{"hello", false},
 		{"你好", false},
 		{"hello😊world", true},
@@ -75,7 +95,7 @@ func TestFormatTime(t *testing.T) {
 	}{
 		{0, "-"},
 		{-1, "-"},
-		{2000000001, "-"}, // 超出范围
+		{2000000001, "-"},          // 超出范围
 		{1700000000, "2023-11-15"}, // 1700000000 UTC = 2023-11-14 22:13 UTC = 2023-11-15 06:13 CST
 	}
 	for _, tc := range cases {

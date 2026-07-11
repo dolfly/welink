@@ -155,7 +155,7 @@ func (s *ContactService) scanContactVoiceCall(username, displayName, avatar stri
 	tableName := db.GetTableName(username)
 	row := &VCContactRow{Username: username, DisplayName: displayName, AvatarURL: avatar}
 
-	for _, mdb := range s.dbMgr.MessageDBs {
+	for _, mdb := range s.msgRepo.DBsForUsername(username) {
 		var contactRowID int64 = -1
 		mdb.QueryRow(fmt.Sprintf("SELECT rowid FROM Name2Id WHERE user_name = %q", username)).Scan(&contactRowID)
 

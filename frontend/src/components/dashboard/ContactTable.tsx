@@ -2,7 +2,7 @@
  * 联系人表格组件
  */
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useSyncExternalStore } from 'react';
 import { MessageCircle, Clock, TrendingUp, Users, ChevronUp, ChevronDown, Bot, Loader2, CheckCircle2, Gift } from 'lucide-react';
 import type { ContactStats } from '../../types';
@@ -85,39 +85,39 @@ export const ContactTable: React.FC<ContactTableProps> = ({ contacts, onContactC
     setCurrentPage(1);
   };
 
-  const sorted = [...contacts].sort((a, b) => {
-    let cmp = 0;
-    switch (sortKey) {
-      case 'name':
-        cmp = (a.remark || a.nickname || a.username).localeCompare(b.remark || b.nickname || b.username, 'zh');
-        break;
-      case 'total_messages':
-        cmp = a.total_messages - b.total_messages;
-        break;
-      case 'shared_groups':
-        cmp = (a.shared_groups_count ?? 0) - (b.shared_groups_count ?? 0);
-        break;
-      case 'last_message_time':
-        cmp = (a.last_message_time || '').localeCompare(b.last_message_time || '');
-        break;
-      case 'peak_monthly':
-        cmp = (a.peak_monthly ?? 0) - (b.peak_monthly ?? 0);
-        break;
-      case 'recent_monthly':
-        cmp = (a.recent_monthly ?? 0) - (b.recent_monthly ?? 0);
-        break;
-      case 'avg_msg_len':
-        cmp = (a.avg_msg_len ?? 0) - (b.avg_msg_len ?? 0);
-        break;
-      case 'money_count':
-        cmp = (a.money_count ?? 0) - (b.money_count ?? 0);
-        break;
-      case 'status':
-        cmp = getStatusTier(a) - getStatusTier(b);
-        break;
-    }
-    return sortDir === 'asc' ? cmp : -cmp;
-  });
+  const sorted = useMemo(() => [...contacts].sort((a, b) => {
+      let cmp = 0;
+      switch (sortKey) {
+        case 'name':
+          cmp = (a.remark || a.nickname || a.username).localeCompare(b.remark || b.nickname || b.username, 'zh');
+          break;
+        case 'total_messages':
+          cmp = a.total_messages - b.total_messages;
+          break;
+        case 'shared_groups':
+          cmp = (a.shared_groups_count ?? 0) - (b.shared_groups_count ?? 0);
+          break;
+        case 'last_message_time':
+          cmp = (a.last_message_time || '').localeCompare(b.last_message_time || '');
+          break;
+        case 'peak_monthly':
+          cmp = (a.peak_monthly ?? 0) - (b.peak_monthly ?? 0);
+          break;
+        case 'recent_monthly':
+          cmp = (a.recent_monthly ?? 0) - (b.recent_monthly ?? 0);
+          break;
+        case 'avg_msg_len':
+          cmp = (a.avg_msg_len ?? 0) - (b.avg_msg_len ?? 0);
+          break;
+        case 'money_count':
+          cmp = (a.money_count ?? 0) - (b.money_count ?? 0);
+          break;
+        case 'status':
+          cmp = getStatusTier(a) - getStatusTier(b);
+          break;
+      }
+      return sortDir === 'asc' ? cmp : -cmp;
+    }), [contacts, sortDir, sortKey]);
 
   const totalPages = Math.ceil(sorted.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;

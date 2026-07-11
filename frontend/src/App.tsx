@@ -251,8 +251,10 @@ function AppInner() {
   } = usePrivacySettings();
 
   // Data Hooks (只在初始化完成后启动)
-  const { contacts: allContacts, loading: contactsLoading } = useContacts(isInitialized, 15000);
-  const { stats: rawGlobalStats } = useGlobalStats(isInitialized, 15000);
+  // 微信解密库和聚合缓存只会在重新初始化时变化。isInitialized 每次从
+  // false -> true 都会触发一次加载，无需每 15 秒重复下载大 JSON 并重渲染整棵应用。
+  const { contacts: allContacts, loading: contactsLoading } = useContacts(isInitialized);
+  const { stats: rawGlobalStats } = useGlobalStats(isInitialized);
   const [allGroups, setAllGroups] = useState<GroupInfo[]>([]);
   useEffect(() => {
     if (isInitialized) groupsApi.getList().then((d) => setAllGroups(d || [])).catch(() => {});

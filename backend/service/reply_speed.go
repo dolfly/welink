@@ -29,7 +29,7 @@ func (s *ContactService) ContactMessageTimeline(username string) []MsgTimePoint 
 	tableName := db.GetTableName(username)
 
 	var points []MsgTimePoint
-	for _, mdb := range s.dbMgr.MessageDBs {
+	for _, mdb := range s.msgRepo.DBsForUsername(username) {
 		// 每个 DB 单独查联系人 rowid（不同 DB 里 rowid 不同）
 		var contactRowID int64 = -1
 		mdb.QueryRow(fmt.Sprintf("SELECT rowid FROM Name2Id WHERE user_name = %q", username)).Scan(&contactRowID)
