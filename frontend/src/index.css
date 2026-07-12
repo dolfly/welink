@@ -21,6 +21,15 @@
   --text-primary:   #1d1d1f;
   --text-secondary: #6b7280;
   --text-muted:     #9ca3af;
+  --accent:         #07c160;
+  --accent-hover:   #06ad56;
+  --accent-soft:    #e7f8f0;
+  --info:           #10aeff;
+  --warning:        #ff9500;
+  --danger:         #fa5151;
+  --radius-card:    1.5rem;
+  --radius-control: 0.75rem;
+  --focus-ring:     rgba(7, 193, 96, 0.28);
 }
 
 html.dark {
@@ -31,6 +40,7 @@ html.dark {
   --text-primary:   #f0f0f0;
   --text-secondary: #9ca3af;
   --text-muted:     #6b7280;
+  --accent-soft:    rgba(7, 193, 96, 0.16);
 }
 
 body {
@@ -38,6 +48,58 @@ body {
   background-color: var(--bg-page);
   color: var(--text-primary);
   transition: background-color 0.2s, color 0.2s;
+}
+
+/* 统一键盘焦点：鼠标点击不显示，键盘导航时清晰可见。 */
+:where(button, a, input, textarea, select, [role="button"], [role="tab"]):focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@layer components {
+  .ui-page-title {
+    @apply text-2xl sm:text-4xl font-black tracking-tight;
+    color: var(--text-primary);
+  }
+
+  .ui-page-subtitle {
+    @apply text-sm font-medium;
+    color: var(--text-secondary);
+  }
+
+  .ui-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+  }
+
+  .ui-caption {
+    @apply text-xs leading-relaxed;
+    color: var(--text-secondary);
+  }
+
+  .ui-control {
+    border-radius: var(--radius-control);
+    min-height: 2.5rem;
+  }
+
+  .ui-skeleton {
+    @apply relative overflow-hidden;
+    background: var(--bg-subtle);
+  }
+
+  .ui-skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(156, 163, 175, 0.14), transparent);
+    animation: ui-skeleton-shimmer 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes ui-skeleton-shimmer {
+  100% { transform: translateX(100%); }
 }
 
 /* 大号数字/纯英文标题用 DM Sans，视觉更干净 */
@@ -126,5 +188,10 @@ html.dark .prose code {
   animation: welink-onboard-pulse 2s ease-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .welink-onboard-pulse { animation: none; }
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

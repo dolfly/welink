@@ -56,7 +56,7 @@ export const InitializingScreen: React.FC<InitializingScreenProps> = ({
     : null;
 
   return (
-    <div className="fixed inset-0 bg-white flex items-center justify-center z-50">
+    <div className="fixed inset-0 dk-page bg-white flex items-center justify-center z-50" role="status" aria-live="polite" aria-busy="true">
       <div className="flex flex-col items-center gap-0 w-80">
 
         {/* Logo 区 */}
@@ -78,7 +78,14 @@ export const InitializingScreen: React.FC<InitializingScreenProps> = ({
         </p>
 
         {/* 进度条 */}
-        <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mb-3 relative">
+        <div
+          className="w-full h-1.5 bg-gray-100 dark:bg-white/10 rounded-full overflow-hidden mb-3 relative"
+          role="progressbar"
+          aria-label={message}
+          aria-valuemin={hasProgress ? 0 : undefined}
+          aria-valuemax={hasProgress ? 100 : undefined}
+          aria-valuenow={hasProgress ? pct : undefined}
+        >
           {hasProgress ? (
             <div
               className="h-full bg-gradient-to-r from-[#09d46a] to-[#07c160] rounded-full transition-all duration-500 ease-out"
@@ -114,6 +121,7 @@ export const InitializingScreen: React.FC<InitializingScreenProps> = ({
         {/* 取消按钮 */}
         {cancellable && (
           <button
+            type="button"
             onClick={handleCancel}
             disabled={cancelling}
             className="mt-8 text-xs text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"

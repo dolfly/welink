@@ -36,6 +36,7 @@ const TabLoading: React.FC = () => (
 import { useWordCloud } from '../../hooks/useContacts';
 import { usePrivacyMode } from '../../contexts/PrivacyModeContext';
 import { avatarSrc } from '../../utils/avatar';
+import { ErrorState, LoadingState } from '../common/AsyncState';
 
 interface ContactModalProps {
   contact: ContactStats | null;
@@ -82,8 +83,10 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
   }, [contact?.username]);
   const [detail, setDetail] = useState<ContactDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState(false);
   const [sentiment, setSentiment] = useState<SentimentResult | null>(null);
   const [sentimentLoading, setSentimentLoading] = useState(false);
+  const [sentimentError, setSentimentError] = useState(false);
   const [includeMine, setIncludeMine] = useState(false);
   const [commonGroups, setCommonGroups] = useState<GroupInfo[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -183,11 +186,13 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
 
   const fetchDetail = useCallback(async (username: string) => {
     setDetailLoading(true);
+    setDetailError(false);
     try {
       const d = await contactsApi.getDetail(username);
       setDetail(d);
     } catch (e) {
       console.error('Failed to fetch detail', e);
+      setDetailError(true);
     } finally {
       setDetailLoading(false);
     }
@@ -195,11 +200,13 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
 
   const fetchSentiment = useCallback(async (username: string, mine: boolean) => {
     setSentimentLoading(true);
+    setSentimentError(false);
     try {
       const d = await contactsApi.getSentiment(username, mine);
       setSentiment(d);
     } catch (e) {
       console.error('Failed to fetch sentiment', e);
+      setSentimentError(true);
     } finally {
       setSentimentLoading(false);
     }
@@ -209,7 +216,9 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
     if (contact) {
       setTab('wordcloud');
       setDetail(null);
+      setDetailError(false);
       setSentiment(null);
+      setSentimentError(false);
       setIncludeMine(false);
       setCommonGroups([]);
       setSearchQuery('');
@@ -261,6 +270,9 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
       onClick={fullscreen ? undefined : onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="contact-dialog-title"
         className={`dk-card bg-white overflow-hidden shadow-2xl relative transition-all duration-300 ${
           fullscreen
             ? 'w-full h-full rounded-none'
@@ -274,8 +286,11 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
           {/* 导出 */}
           <div className="relative" ref={exportPanelRef}>
             <button
+              type="button"
               disabled={exporting}
               onClick={() => setShowExportPanel(v => !v)}
+              aria-label="导出聊天记录"
+              aria-expanded={showExportPanel}
               className={`p-2 rounded-xl transition-colors duration-200 disabled:opacity-40 ${showExportPanel ? 'text-[#07c160] bg-[#e7f8f0]' : 'text-gray-300 hover:text-[#07c160] hover:bg-[#e7f8f0]'}`}
               title="导出聊天记录"
             >
@@ -318,28 +333,37 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
             )}
           </div>
           <button
+            type="button"
             onClick={() => setPodcastOpen(true)}
+            aria-label="生成播客"
             className="p-2 rounded-xl text-gray-300 hover:text-pink-500 hover:bg-pink-500/10 transition-colors duration-200"
             title="生成播客 — 双主持人对话 + TTS 播报"
           >
             <Mic size={20} strokeWidth={2} />
           </button>
           <button
+            type="button"
             onClick={() => setForgeOpen(true)}
+            aria-label="炼化为 Skill"
             className="p-2 rounded-xl text-gray-300 hover:text-[#8b5cf6] hover:bg-[#8b5cf6]/10 transition-colors duration-200"
             title="炼化为 Skill（导出给 Claude Code / Codex / Cursor 等工具使用）"
           >
             <Sparkles size={20} strokeWidth={2} />
           </button>
           <button
+            type="button"
             onClick={() => setVnOpen(true)}
+            aria-label="打开互动小说"
             className="p-2 rounded-xl text-gray-300 hover:text-[#a78bfa] hover:bg-[#a78bfa]/10 transition-colors duration-200"
             title="互动小说 — 把 TA 当 NPC，写一段有选项的剧情"
           >
             <BookOpen size={20} strokeWidth={2} />
           </button>
           <button
+            type="button"
             onClick={() => setFullscreen(v => !v)}
+            aria-label={fullscreen ? '退出全屏' : '全屏显示'}
+            aria-pressed={fullscreen}
             className="p-2 rounded-xl text-gray-300 hover:text-[#07c160] hover:bg-[#e7f8f0] dark:hover:bg-[#07c160]/15 transition-colors duration-200"
             title={fullscreen ? '退出全屏' : '全屏'}
           >
@@ -347,7 +371,9 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
           </button>
           {onBlock && (
             <button
+              type="button"
               onClick={() => setBlockConfirmOpen(true)}
+              aria-label="屏蔽该联系人"
               className="p-2 rounded-xl text-gray-300 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors duration-200"
               title="屏蔽该联系人"
             >
@@ -355,7 +381,9 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
             </button>
           )}
           <button
+            type="button"
             onClick={onClose}
+            aria-label="关闭联系人详情"
             className="text-gray-300 hover:text-gray-900 dark:hover:text-gray-200 transition-colors duration-200"
           >
             <X size={28} strokeWidth={2} />
@@ -423,7 +451,7 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap mb-0.5">
-              <h3 className={`dk-text text-xl sm:text-3xl font-black tracking-tight text-[#1d1d1f]${privacyMode ? ' privacy-blur' : ''}`}>
+              <h3 id="contact-dialog-title" className={`dk-text text-xl sm:text-3xl font-black tracking-tight text-[#1d1d1f]${privacyMode ? ' privacy-blur' : ''}`}>
                 {displayName}
               </h3>
               <RelationshipThermometer contact={contact} />
@@ -648,11 +676,16 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
         )}
 
         {/* Tabs + 消息范围切换 */}
-        <div className="flex items-center justify-between mb-6 dk-border border-b border-gray-100">
-          <div className="flex gap-2">
+        <div className="flex items-center justify-between gap-3 mb-6 dk-border border-b border-gray-100">
+          <div className="flex gap-1 overflow-x-auto" role="tablist" aria-label="联系人详情视图">
             {(['wordcloud', 'detail', 'sentiment', 'search', 'wechat', 'replay', 'ai', 'clone', 'insights'] as ModalTab[]).map((t) => (
               <button
+                type="button"
                 key={t}
+                id={`contact-tab-${t}`}
+                role="tab"
+                aria-selected={tab === t}
+                aria-controls={`contact-panel-${t}`}
                 onClick={() => {
                   setTab(t);
                   if (!contact) return;
@@ -667,7 +700,7 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
                   }
                   if (t === 'search') setTimeout(() => searchInputRef.current?.focus(), 50);
                 }}
-                className={`flex items-center gap-0.5 px-2 sm:px-3 py-1.5 rounded-t-xl text-[11px] sm:text-xs font-bold transition border-b-2 -mb-px ${
+                className={`flex min-h-10 shrink-0 items-center gap-0.5 px-2 sm:px-3 py-1.5 rounded-t-xl text-xs font-bold transition border-b-2 -mb-px ${
                   tab === t
                     ? 'text-[#07c160] border-[#07c160]'
                     : 'text-gray-400 border-transparent hover:text-gray-600'
@@ -683,7 +716,9 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
           {/* 只在词云/情感/搜索 tab 显示切换，AI tab 不需要 */}
           {(tab === 'wordcloud' || tab === 'sentiment' || tab === 'search') && (
             <button
+              type="button"
               onClick={() => handleToggleMine(!includeMine)}
+              aria-pressed={includeMine}
               className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border transition-all mb-1 ${
                 includeMine
                   ? 'bg-[#07c160] text-white border-[#07c160]'
@@ -696,6 +731,12 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
           )}
         </div>
 
+        <div
+          id={`contact-panel-${tab}`}
+          role="tabpanel"
+          aria-labelledby={`contact-tab-${tab}`}
+          tabIndex={0}
+        >
         {tab === 'wordcloud' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-10">
             {/* Word Cloud */}
@@ -711,8 +752,8 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
             {/* Side Info */}
             <div className="space-y-4 sm:space-y-8">
               <div className="dk-subtle dk-border bg-[#f8f9fb] border border-gray-100 p-5 rounded-[28px] flex flex-col gap-1">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">第一条消息</p>
-                <p className="text-[10px] text-gray-400">{contact.first_message_time}</p>
+                <p className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.16em]">第一条消息</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{contact.first_message_time}</p>
                 <p className="dk-text text-sm italic font-medium text-[#1d1d1f] leading-relaxed mt-1">
                   "{contact.first_msg || '穿越时空的信号...'}"
                 </p>
@@ -732,9 +773,9 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
 
         {tab === 'detail' && (
           detailLoading ? (
-            <div className="flex items-center justify-center h-48 text-[#07c160] font-bold animate-pulse text-sm">
-              正在分析数据...
-            </div>
+            <LoadingState title="正在生成深度画像" description="正在统计活跃时段、聊天密度和回复节奏。" rows={3} />
+          ) : detailError ? (
+            <ErrorState title="深度画像加载失败" onRetry={() => fetchDetail(contact.username)} />
           ) : detail ? (
             <ContactDetailCharts
               detail={detail}
@@ -750,9 +791,9 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
 
         {tab === 'sentiment' && (
           sentimentLoading ? (
-            <div className="flex items-center justify-center h-48 text-[#07c160] font-bold animate-pulse text-sm">
-              正在分析情感...
-            </div>
+            <LoadingState title="正在分析情感趋势" description="正在整理聊天文本中的情绪变化。" rows={3} />
+          ) : sentimentError ? (
+            <ErrorState title="情感分析加载失败" onRetry={() => fetchSentiment(contact.username, includeMine)} />
           ) : sentiment ? (
             <SentimentChart data={sentiment} username={contact.username} contactName={displayName} includeMine={includeMine} />
           ) : (
@@ -883,7 +924,7 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
                           ${msg.is_mine ? 'bg-[#07c160] text-white rounded-br-sm' : 'bg-[#f0f0f0] dark:bg-white/10 text-[#1d1d1f] dark:text-gray-100 rounded-bl-sm'}`}>
                           {msg.content}
                         </div>
-                        <span className="text-[10px] text-gray-300 px-1">{msg.date} {msg.time}</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 px-1">{msg.date} {msg.time}</span>
                       </div>
                     </div>
                   ))}
@@ -892,6 +933,7 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
             ) : null}
           </div>
         )}
+        </div>
           </div>
       </div>{/* end inner scroll div */}
       </div>{/* end outer rounded clip div */}

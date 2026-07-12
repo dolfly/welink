@@ -8,6 +8,7 @@ import type { ContactStats } from '../../types';
 import { ContactTable } from './ContactTable';
 import { ComparePanel } from './ComparePanel';
 import { CommonCirclePanel } from './CommonCirclePanel';
+import { LoadingState } from '../common/AsyncState';
 
 interface Props {
   contacts: ContactStats[];
@@ -53,8 +54,8 @@ export const ContactsPage: React.FC<Props> = ({
   return (
     <div>
       <div className="mb-6 sm:mb-8">
-        <h2 className="text-2xl font-black text-[#1d1d1f] dk-text mb-1">私聊</h2>
-        <p className="text-sm text-gray-400">联系人聊天记录</p>
+        <h2 className="ui-page-title mb-1">私聊</h2>
+        <p className="ui-page-subtitle">联系人聊天记录</p>
       </div>
 
       <div className="mb-8">
@@ -62,7 +63,9 @@ export const ContactsPage: React.FC<Props> = ({
           <div className="flex items-center gap-3">
             <span className="text-gray-400 text-lg font-semibold">{filteredContacts.length} 位联系人</span>
             <button
+              type="button"
               onClick={() => compareMode ? exitCompareMode() : setCompareMode(true)}
+              aria-pressed={compareMode}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
                 compareMode
                   ? 'bg-[#07c160] text-white'
@@ -73,6 +76,7 @@ export const ContactsPage: React.FC<Props> = ({
               {compareMode ? '退出对比' : '对比模式'}
             </button>
             <button
+              type="button"
               onClick={() => setShowCommonCircle(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-[#8b5cf6]/10 hover:text-[#8b5cf6] transition-all"
             >
@@ -84,6 +88,7 @@ export const ContactsPage: React.FC<Props> = ({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
             <input
               type="text"
+              aria-label="搜索联系人"
               placeholder="搜索联系人..."
               value={search}
               onChange={e => onSearchChange(e.target.value)}
@@ -92,9 +97,7 @@ export const ContactsPage: React.FC<Props> = ({
           </div>
         </div>
         {statsLoading && contacts.length === 0 ? (
-          <div className="bg-white dk-card rounded-3xl border border-gray-100 dk-border p-20 text-center">
-            <div className="text-gray-300 font-bold text-lg animate-pulse">加载中...</div>
-          </div>
+          <LoadingState title="正在加载联系人" description="正在整理私聊记录和活跃度指标。" />
         ) : (
           <ContactTable
             contacts={filteredContacts}

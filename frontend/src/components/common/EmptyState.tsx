@@ -14,7 +14,7 @@ interface Props {
 
 export const EmptyState: React.FC<Props> = ({ icon, title, description, action, secondary }) => {
   return (
-    <div className="flex flex-col items-center justify-center py-12 px-6 rounded-2xl border border-dashed border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5 text-center">
+    <div className="ui-card flex flex-col items-center justify-center border-dashed py-12 px-6 text-center">
       {icon && (
         <div className="w-14 h-14 rounded-2xl bg-[#07c160]/10 flex items-center justify-center mb-4 text-[#07c160]">
           {icon}
@@ -25,16 +25,18 @@ export const EmptyState: React.FC<Props> = ({ icon, title, description, action, 
       <div className="flex gap-2">
         {action && (
           <button
+            type="button"
             onClick={action.onClick}
-            className="px-4 py-2 rounded-xl bg-[#07c160] text-white text-sm font-semibold hover:bg-[#06ad56] transition-colors"
+            className="ui-control px-4 bg-[#07c160] text-white text-sm font-semibold hover:bg-[#06ad56] transition-colors"
           >
             {action.label}
           </button>
         )}
         {secondary && (
           <button
+            type="button"
             onClick={secondary.onClick}
-            className="px-4 py-2 rounded-xl bg-white dark:bg-white/10 border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-white/15 transition-colors"
+            className="ui-control px-4 bg-white dark:bg-white/10 border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-white/15 transition-colors"
           >
             {secondary.label}
           </button>

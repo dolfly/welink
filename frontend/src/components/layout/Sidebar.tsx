@@ -84,7 +84,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, dark, 
           <div className="flex items-center justify-between px-4 py-2 border-b dk-border">
             <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">API 文档</span>
             <button
+              type="button"
               onClick={() => setSwaggerOpen(false)}
+              aria-label="关闭 API 文档"
               className="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-white/10 transition-all"
             >
               <X size={18} />
@@ -103,18 +105,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, dark, 
       >
         {/* Logo 区（固定） */}
         <div className={`shrink-0 flex items-center gap-3 px-3 mb-4 ${expanded ? 'justify-between' : 'justify-center flex-col gap-2'}`}>
-          <div
+          <button
+            type="button"
             className="w-9 h-9 rounded-xl overflow-hidden shadow-md shadow-green-100/50 dark:shadow-none cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0"
             onClick={() => openExternal('https://welink.click')}
             title="官方文档"
+            aria-label="打开 WeLink 官方文档"
           >
             <img loading="lazy" src="/favicon.svg" alt="WeLink" className="w-full h-full" />
-          </div>
+          </button>
           {expanded && (
             <span className="text-sm font-black text-[#1d1d1f] dark:text-white tracking-tight flex-1 truncate">WeLink</span>
           )}
           <button
+            type="button"
             onClick={toggleExpanded}
+            aria-expanded={expanded}
+            aria-label={expanded ? '收起侧边栏' : '展开侧边栏'}
             className="flex-shrink-0 p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 transition-all"
             title={expanded ? '收起侧边栏' : '展开侧边栏'}
           >
@@ -123,12 +130,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, dark, 
         </div>
 
         {/* 主导航（中间可滚动） */}
-        <nav className="flex flex-col gap-1 flex-1 min-h-0 overflow-y-auto px-2">
+        <nav aria-label="主导航" className="flex flex-col gap-1 flex-1 min-h-0 overflow-y-auto px-2">
           {navItems.map(({ tab, icon, label }) => (
             <button
+              type="button"
               key={tab}
               data-tour={`nav-${tab}`}
               onClick={() => onTabChange(tab)}
+              aria-current={activeTab === tab ? 'page' : undefined}
               title={expanded ? undefined : label}
               className={`flex items-center gap-3 rounded-xl transition-all duration-150 ${
                 expanded ? 'px-3 py-2.5' : 'p-3 justify-center'
@@ -153,6 +162,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, dark, 
         <div className="shrink-0 flex flex-col gap-1 px-2 pt-2 border-t border-gray-100 dark:border-white/10 mt-2">
           {bottomItems.map(({ icon, label, onClick }) => (
             <button
+              type="button"
               key={label}
               onClick={onClick}
               title={expanded ? undefined : label}
@@ -170,12 +180,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, dark, 
       </aside>
 
       {/* 手机底部导航栏（不受折叠影响） */}
-      <nav data-tour="sidebar" className="sm:hidden fixed bottom-0 left-0 right-0 z-50 dk-card bg-white dk-border border-t flex safe-area-inset-bottom">
+      <nav aria-label="移动端主导航" data-tour="sidebar" className="sm:hidden fixed bottom-0 left-0 right-0 z-50 dk-card bg-white dk-border border-t flex safe-area-inset-bottom">
         {navItems.map(({ tab, icon, label }) => (
           <button
+            type="button"
             key={tab}
             data-tour={`nav-${tab}`}
             onClick={() => onTabChange(tab)}
+            aria-current={activeTab === tab ? 'page' : undefined}
             className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors min-w-0 ${
               activeTab === tab ? 'text-[#07c160]' : 'text-gray-400'
             }`}

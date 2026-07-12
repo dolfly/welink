@@ -32,6 +32,8 @@ import { ForgeSkillModal } from '../contact/ForgeSkillModal';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { AIAnalysisBadge } from '../dashboard/ContactTable';
 import { avatarSrc } from '../../utils/avatar';
+import { ErrorState, LoadingState } from '../common/AsyncState';
+import { EmptyState } from '../common/EmptyState';
 
 // ─── 群详情弹窗 ───────────────────────────────────────────────────────────────
 
@@ -253,6 +255,9 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({ group, onClo
       onClick={fullscreen ? undefined : onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="group-dialog-title"
         className={`dk-card bg-white overflow-hidden shadow-2xl relative transition-all duration-300 ${
           fullscreen
             ? 'w-full h-full rounded-none'
@@ -267,8 +272,11 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({ group, onClo
           {/* 导出 */}
           <div className="relative" ref={exportPanelRef}>
             <button
+              type="button"
               disabled={exporting}
               onClick={() => setShowExportPanel(v => !v)}
+              aria-label="导出群聊记录"
+              aria-expanded={showExportPanel}
               className={`p-2 rounded-xl transition-colors duration-200 disabled:opacity-40 ${showExportPanel ? 'text-[#07c160] bg-[#e7f8f0] dark:bg-[#07c160]/15' : 'text-gray-300 hover:text-[#07c160] hover:bg-[#e7f8f0] dark:hover:bg-[#07c160]/15'}`}
               title="导出聊天记录"
             >
@@ -310,14 +318,19 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({ group, onClo
             )}
           </div>
           <button
+            type="button"
             onClick={() => setForgeOpen(true)}
+            aria-label="炼化群聊为 Skill"
             className="p-2 rounded-xl text-gray-300 hover:text-[#8b5cf6] hover:bg-[#8b5cf6]/10 transition-colors duration-200"
             title="炼化群为 Skill（导出给 Claude Code / Codex / Cursor 等工具使用）"
           >
             <Sparkles size={20} strokeWidth={2} />
           </button>
           <button
+            type="button"
             onClick={() => setFullscreen(v => !v)}
+            aria-label={fullscreen ? '退出全屏' : '全屏显示'}
+            aria-pressed={fullscreen}
             className="p-2 rounded-xl text-gray-300 hover:text-[#07c160] hover:bg-[#e7f8f0] dark:hover:bg-[#07c160]/15 transition-colors duration-200"
             title={fullscreen ? '退出全屏' : '全屏'}
           >
@@ -325,14 +338,16 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({ group, onClo
           </button>
           {onBlock && (
             <button
+              type="button"
               onClick={() => setBlockConfirmOpen(true)}
+              aria-label="屏蔽该群聊"
               className="p-2 rounded-xl text-gray-300 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors duration-200"
               title="屏蔽该群聊"
             >
               <EyeOff size={20} strokeWidth={2} />
             </button>
           )}
-          <button onClick={onClose} className="text-gray-300 hover:text-gray-700 dark:hover:text-gray-200">
+          <button type="button" onClick={onClose} aria-label="关闭群聊详情" className="p-1 text-gray-300 hover:text-gray-700 dark:hover:text-gray-200">
             <X size={28} strokeWidth={2} />
           </button>
         </div>
@@ -348,7 +363,7 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({ group, onClo
             </div>
           )}
           <div>
-            <h3 className={`dk-text text-2xl sm:text-3xl font-black text-[#1d1d1f]${privacyMode ? ' privacy-blur' : ''}`}>{group.name}</h3>
+            <h3 id="group-dialog-title" className={`dk-text text-2xl sm:text-3xl font-black text-[#1d1d1f]${privacyMode ? ' privacy-blur' : ''}`}>{group.name}</h3>
             <p className="text-xs text-gray-400 mt-1 flex flex-wrap items-center gap-1.5">
               <span>{group.total_messages.toLocaleString()} 条消息</span>
               {(group.first_message_ts || group.first_message_time) && (
@@ -364,15 +379,20 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({ group, onClo
         </div>
 
         {/* Tab bar */}
-        <div className="flex gap-2 border-b border-gray-100 dk-border">
+        <div className="flex gap-1 overflow-x-auto border-b border-gray-100 dk-border" role="tablist" aria-label="群聊详情视图">
           {(['portrait', 'relationships', 'search', 'replay', 'ai', 'sim'] as const).map((t) => (
             <button
+              type="button"
               key={t}
+              id={`group-tab-${t}`}
+              role="tab"
+              aria-selected={tab === t}
+              aria-controls={`group-panel-${t}`}
               onClick={() => {
                 setTab(t);
                 if (t === 'search') setTimeout(() => searchInputRef.current?.focus(), 50);
               }}
-              className={`flex items-center gap-1 px-5 py-2 rounded-t-xl text-sm font-bold transition border-b-2 -mb-px ${
+              className={`flex min-h-10 shrink-0 items-center gap-1 px-4 py-2 rounded-t-xl text-sm font-bold transition border-b-2 -mb-px ${
                 tab === t ? 'text-[#07c160] border-[#07c160]' : 'text-gray-400 border-transparent hover:text-gray-600 dark:hover:text-gray-200'
               }`}
             >
@@ -385,7 +405,13 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({ group, onClo
         </div>
         </div>{/* end sticky header */}
 
-        <div className="px-4 sm:px-8 lg:px-10 pb-4 sm:pb-8 pt-4">
+        <div
+          id={`group-panel-${tab}`}
+          role="tabpanel"
+          aria-labelledby={`group-tab-${tab}`}
+          tabIndex={0}
+          className="px-4 sm:px-8 lg:px-10 pb-4 sm:pb-8 pt-4"
+        >
         {tab === 'relationships' && (
           <RelationshipGraphPanel username={group.username} />
         )}
@@ -1093,6 +1119,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ allContacts, onContactCl
   const { privacyMode } = usePrivacyMode();
   const [groups, setGroups] = useState<GroupInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [search, setSearch] = useState('');
   // removed: selected state — modal now rendered at App.tsx top level via onGroupClick
   const [sortKey, setSortKey] = useState<GroupSortKey>('total_messages');
@@ -1103,12 +1130,19 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ allContacts, onContactCl
   const [compareSelected, setCompareSelected] = useState<Set<string>>(new Set());
   const [showCompare, setShowCompare] = useState(false);
 
-  useEffect(() => {
+  const loadGroups = useCallback(() => {
+    setLoading(true);
+    setLoadError(false);
     groupsApi.getList().then((data) => {
       setGroups(data || []);
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch(() => {
+      setLoadError(true);
+      setLoading(false);
+    });
   }, []);
+
+  useEffect(() => { loadGroups(); }, [loadGroups]);
 
   const filtered = groups.filter(g => {
     if (blockedGroups.some(b => b === g.username || b === g.name)) return false;
@@ -1159,18 +1193,27 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ allContacts, onContactCl
       : <ChevronDown size={11} className="ml-1 text-[#07c160]" />;
   };
 
-  const thClass = "px-3 py-3 text-left text-xs font-black text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:text-[#07c160] transition-colors whitespace-nowrap";
+  const SortHeader = ({ col, children }: { col: GroupSortKey; children: React.ReactNode }) => (
+    <th
+      className="px-3 py-2 text-left"
+      aria-sort={sortKey === col ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+    >
+      <button
+        type="button"
+        onClick={() => handleSort(col)}
+        className="flex min-h-9 items-center gap-1 whitespace-nowrap rounded-lg px-1 text-xs font-black uppercase tracking-wider text-gray-500 transition-colors hover:text-[#07c160]"
+      >
+        {children}<SortIcon col={col} />
+      </button>
+    </th>
+  );
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-96 gap-4">
-        <Loader2 size={40} className="text-[#07c160] animate-spin" />
-        <div className="text-center">
-          <p className="text-sm font-semibold text-gray-500 dk-text">正在加载群聊数据...</p>
-          <p className="text-xs text-gray-400 mt-1">群聊较多时首次加载可能需要几秒</p>
-        </div>
-      </div>
-    );
+    return <LoadingState title="正在加载群聊" description="正在整理群活跃度和最近联系时间。" />;
+  }
+
+  if (loadError) {
+    return <ErrorState title="群聊加载失败" onRetry={loadGroups} />;
   }
 
   const totalMembers = groups.reduce((s, g) => s + (g.member_count ?? 0), 0);
@@ -1180,12 +1223,14 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ allContacts, onContactCl
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="dk-text text-3xl sm:text-5xl font-black tracking-tight text-[#1d1d1f] mb-1">群聊画像</h1>
-          <p className="text-gray-400 text-sm">{groups.length} 个群聊</p>
+          <h1 className="ui-page-title mb-1">群聊画像</h1>
+          <p className="ui-page-subtitle">{groups.length} 个群聊</p>
         </div>
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={() => { if (compareMode) { setCompareMode(false); setCompareSelected(new Set()); } else { setCompareMode(true); } }}
+            aria-pressed={compareMode}
             className={`flex items-center gap-1.5 px-3 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap ${
               compareMode
                 ? 'bg-[#07c160] text-white'
@@ -1198,6 +1243,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ allContacts, onContactCl
           <div className="relative w-full sm:w-64">
             <input
               type="text"
+              aria-label="搜索群聊"
               placeholder="搜索群聊..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
@@ -1296,7 +1342,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ allContacts, onContactCl
                       <span className="text-xs font-bold" style={{ color: s.color }}>{s.label}</span>
                       <span className="text-lg font-black text-[#1d1d1f] dk-text">{s.count}</span>
                     </div>
-                    <div className="text-[10px] text-gray-400 mt-0.5">{s.desc}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{s.desc}</div>
                     <div className="h-1 bg-white/50 dark:bg-white/10 rounded-full mt-1.5 overflow-hidden">
                       <div className="h-full rounded-full" style={{ width: `${groups.length > 0 ? (s.count / groups.length) * 100 : 0}%`, background: s.color }} />
                     </div>
@@ -1315,21 +1361,11 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ allContacts, onContactCl
           <table className="w-full">
             <thead>
               <tr className="dk-thead bg-[#f8f9fb] dk-border border-b border-gray-100">
-                <th className={thClass} onClick={() => handleSort('name')}>
-                  <div className="flex items-center">群名<SortIcon col="name" /></div>
-                </th>
-                <th className={thClass} onClick={() => handleSort('member_count')}>
-                  <div className="flex items-center gap-1"><Users size={14} />发言人数<SortIcon col="member_count" /></div>
-                </th>
-                <th className={thClass} onClick={() => handleSort('total_messages')}>
-                  <div className="flex items-center gap-1"><MessageCircle size={14} />消息数<SortIcon col="total_messages" /></div>
-                </th>
-                <th className={thClass} onClick={() => handleSort('last_message_time')}>
-                  <div className="flex items-center gap-1"><Clock size={14} />最后联系<SortIcon col="last_message_time" /></div>
-                </th>
-                <th className={thClass} onClick={() => handleSort('status')}>
-                  <div className="flex items-center gap-1">状态<SortIcon col="status" /></div>
-                </th>
+                <SortHeader col="name">群名</SortHeader>
+                <SortHeader col="member_count"><Users size={14} aria-hidden="true" />发言人数</SortHeader>
+                <SortHeader col="total_messages"><MessageCircle size={14} aria-hidden="true" />消息数</SortHeader>
+                <SortHeader col="last_message_time"><Clock size={14} aria-hidden="true" />最后联系</SortHeader>
+                <SortHeader col="status">状态</SortHeader>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-white/5">
@@ -1380,7 +1416,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ allContacts, onContactCl
                           <Users size={11} />{group.member_count}
                         </span>
                         {(group.my_rank ?? 0) > 0 && group.total_messages > 0 && (
-                          <span className="text-[10px] text-gray-400 px-1">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 px-1">
                             我 #{group.my_rank}
                             {group.my_messages ? ` · ${((group.my_messages / group.total_messages) * 100).toFixed(1)}%` : ''}
                           </span>
@@ -1394,7 +1430,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ allContacts, onContactCl
                     <div className="flex flex-col items-start gap-0.5">
                       <span className="font-bold dk-text text-[#1d1d1f]">{group.total_messages.toLocaleString()}</span>
                       {((group.recent_30d_messages ?? 0) > 0 || (group.recent_trend_pct ?? 0) !== 0) && (
-                        <span className="flex items-center gap-1 text-[10px]">
+                        <span className="flex items-center gap-1 text-xs">
                           {(group.recent_30d_messages ?? 0) > 0 && (
                             <span className="text-gray-400">30天 {group.recent_30d_messages}</span>
                           )}
@@ -1418,7 +1454,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ allContacts, onContactCl
                     <div className="flex flex-col items-start gap-0.5">
                       <RelativeTime ts={group.last_message_ts} placeholder={group.last_message_time || '-'} />
                       {(group.my_last_message_ts ?? 0) > 0 && group.my_last_message_ts !== group.last_message_ts && (
-                        <span className="text-[10px] text-gray-400">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
                           我：<RelativeTime ts={group.my_last_message_ts} />
                         </span>
                       )}
@@ -1468,7 +1504,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ allContacts, onContactCl
               <div className="flex flex-col items-end gap-1 ml-3 flex-shrink-0">
                 <span className="text-sm font-bold text-[#1d1d1f] dk-text">{group.total_messages.toLocaleString()}</span>
                 {(group.recent_trend_pct !== undefined && group.recent_trend_pct !== 0 && group.recent_trend_pct < 999) && (
-                  <span className={`text-[10px] font-bold ${
+                  <span className={`text-xs font-bold ${
                     group.recent_trend_pct > 20 ? 'text-[#07c160]' :
                     group.recent_trend_pct < -20 ? 'text-[#fa5151]' : 'text-gray-400'
                   }`}>
@@ -1483,7 +1519,9 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ allContacts, onContactCl
         </div>
 
         {filtered.length === 0 && (
-          <div className="text-center py-16 text-gray-300 font-semibold">无匹配群聊</div>
+          <div className="p-4">
+            <EmptyState title="没有找到群聊" description="试试更换搜索词，或检查屏蔽群聊设置。" />
+          </div>
         )}
 
         {/* Pagination */}

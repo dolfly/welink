@@ -4,12 +4,13 @@
 
 import React, { useMemo, useState } from 'react';
 import { useSyncExternalStore } from 'react';
-import { MessageCircle, Clock, TrendingUp, Users, ChevronUp, ChevronDown, Bot, Loader2, CheckCircle2, Gift } from 'lucide-react';
+import { MessageCircle, Clock, TrendingUp, Users, ChevronUp, ChevronDown, Bot, Loader2, CheckCircle2, Gift, SlidersHorizontal } from 'lucide-react';
 import type { ContactStats } from '../../types';
 import { usePrivacyMode } from '../../contexts/PrivacyModeContext';
 import { subscribeAnalysis, getAnalysisSnapshot } from '../../stores/llmAnalysisStore';
 import { RelativeTime } from '../common/RelativeTime';
 import { avatarSrc } from '../../utils/avatar';
+import { EmptyState } from '../common/EmptyState';
 
 interface ContactTableProps {
   contacts: ContactStats[];
@@ -74,6 +75,7 @@ export const ContactTable: React.FC<ContactTableProps> = ({ contacts, onContactC
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [sortKey, setSortKey] = useState<SortKey>('total_messages');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [showExtendedColumns, setShowExtendedColumns] = useState(false);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -135,43 +137,59 @@ export const ContactTable: React.FC<ContactTableProps> = ({ contacts, onContactC
       : <ChevronDown size={11} className="ml-1 text-[#07c160]" />;
   };
 
-  const thClass = "px-3 py-3 text-left text-xs font-black text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:text-[#07c160] transition-colors whitespace-nowrap";
+  const SortHeader = ({ col, children }: { col: SortKey; children: React.ReactNode }) => (
+    <th
+      className="px-3 py-2 text-left"
+      aria-sort={sortKey === col ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+    >
+      <button
+        type="button"
+        onClick={() => handleSort(col)}
+        className="flex min-h-9 items-center gap-1 whitespace-nowrap rounded-lg px-1 text-xs font-black uppercase tracking-wider text-gray-500 transition-colors hover:text-[#07c160]"
+      >
+        {children}<SortIcon col={col} />
+      </button>
+    </th>
+  );
+
+  if (sorted.length === 0) {
+    return (
+      <EmptyState
+        title="没有找到联系人"
+        description="试试更换搜索词，或检查当前时间范围。"
+      />
+    );
+  }
 
   return (
     <div className="dk-card dk-border bg-white rounded-2xl sm:rounded-3xl border border-gray-100 overflow-hidden">
+      <div className="hidden sm:flex items-center justify-between gap-4 border-b border-gray-100 px-4 py-3 dark:border-white/5">
+        <p className="ui-caption">默认展示最常用的联系指标</p>
+        <button
+          type="button"
+          onClick={() => setShowExtendedColumns(value => !value)}
+          aria-expanded={showExtendedColumns}
+          className="ui-control inline-flex items-center gap-2 px-3 text-xs font-bold text-gray-500 transition-colors hover:bg-gray-50 hover:text-[#07c160] dark:hover:bg-white/5"
+        >
+          <SlidersHorizontal size={14} aria-hidden="true" />
+          {showExtendedColumns ? '收起扩展指标' : '显示扩展指标'}
+        </button>
+      </div>
       {/* 桌面表格 */}
       <div className="hidden sm:block overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="dk-thead bg-[#f8f9fb] dk-border border-b border-gray-100">
               {compareMode && <th className="px-3 py-5 w-10" />}
-              <th className={thClass} onClick={() => handleSort('name')}>
-                <div className="flex items-center">联系人<SortIcon col="name" /></div>
-              </th>
-              <th className={thClass} onClick={() => handleSort('total_messages')}>
-                <div className="flex items-center gap-1"><MessageCircle size={14} />消息总数<SortIcon col="total_messages" /></div>
-              </th>
-              <th className={thClass} onClick={() => handleSort('shared_groups')}>
-                <div className="flex items-center gap-1"><Users size={14} />共同群聊<SortIcon col="shared_groups" /></div>
-              </th>
-              <th className={thClass} onClick={() => handleSort('money_count')}>
-                <div className="flex items-center gap-1"><Gift size={14} />红包/转账<SortIcon col="money_count" /></div>
-              </th>
-              <th className={thClass} onClick={() => handleSort('peak_monthly')}>
-                <div className="flex items-center gap-1"><TrendingUp size={14} />历史峰值月<SortIcon col="peak_monthly" /></div>
-              </th>
-              <th className={thClass} onClick={() => handleSort('recent_monthly')}>
-                <div className="flex items-center gap-1"><Clock size={14} />近一个月<SortIcon col="recent_monthly" /></div>
-              </th>
-              <th className={thClass} onClick={() => handleSort('avg_msg_len')}>
-                <div className="flex items-center gap-1">均消息长<SortIcon col="avg_msg_len" /></div>
-              </th>
-              <th className={thClass} onClick={() => handleSort('last_message_time')}>
-                <div className="flex items-center gap-1">最后联系<SortIcon col="last_message_time" /></div>
-              </th>
-              <th className={thClass} onClick={() => handleSort('status')}>
-                <div className="flex items-center gap-1">状态<SortIcon col="status" /></div>
-              </th>
+              <SortHeader col="name">联系人</SortHeader>
+              <SortHeader col="total_messages"><MessageCircle size={14} aria-hidden="true" />消息总数</SortHeader>
+              {showExtendedColumns && <SortHeader col="shared_groups"><Users size={14} aria-hidden="true" />共同群聊</SortHeader>}
+              {showExtendedColumns && <SortHeader col="money_count"><Gift size={14} aria-hidden="true" />红包/转账</SortHeader>}
+              {showExtendedColumns && <SortHeader col="peak_monthly"><TrendingUp size={14} aria-hidden="true" />历史峰值月</SortHeader>}
+              <SortHeader col="recent_monthly"><Clock size={14} aria-hidden="true" />近一个月</SortHeader>
+              {showExtendedColumns && <SortHeader col="avg_msg_len">均消息长</SortHeader>}
+              <SortHeader col="last_message_time">最后联系</SortHeader>
+              <SortHeader col="status">状态</SortHeader>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-white/5">
@@ -214,7 +232,7 @@ export const ContactTable: React.FC<ContactTableProps> = ({ contacts, onContactC
                 <td className="px-3 py-3.5 text-sm">
                   <span className="font-bold text-[#1d1d1f] dk-text">{contact.total_messages.toLocaleString()}</span>
                 </td>
-                <td className="px-3 py-3.5 text-sm">
+                {showExtendedColumns && <td className="px-3 py-3.5 text-sm">
                   {(contact.shared_groups_count ?? 0) > 0 ? (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-600">
                       <Users size={11} />{contact.shared_groups_count}
@@ -222,8 +240,8 @@ export const ContactTable: React.FC<ContactTableProps> = ({ contacts, onContactC
                   ) : (
                     <span className="text-sm text-gray-300">-</span>
                   )}
-                </td>
-                <td className="px-3 py-3.5 text-sm">
+                </td>}
+                {showExtendedColumns && <td className="px-3 py-3.5 text-sm">
                   {(contact.money_count ?? 0) > 0 ? (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-orange-50 text-orange-600">
                       <Gift size={11} />{contact.money_count}
@@ -231,20 +249,20 @@ export const ContactTable: React.FC<ContactTableProps> = ({ contacts, onContactC
                   ) : (
                     <span className="text-sm text-gray-300">-</span>
                   )}
-                </td>
-                <td className="px-3 py-3.5 text-sm">
+                </td>}
+                {showExtendedColumns && <td className="px-3 py-3.5 text-sm">
                   {(contact.peak_monthly ?? 0) > 0 ? (
                     <div>
                       <span className="font-bold text-[#1d1d1f] dk-text">{contact.peak_monthly!.toLocaleString()}</span>
                       <span className="text-xs text-gray-400 ml-1">条</span>
                       {contact.peak_period && (
-                        <div className="text-[10px] text-gray-400 mt-0.5">{contact.peak_period}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{contact.peak_period}</div>
                       )}
                     </div>
                   ) : (
                     <span className="text-sm text-gray-300">-</span>
                   )}
-                </td>
+                </td>}
                 <td className="px-3 py-3.5 text-sm">
                   {(contact.recent_monthly ?? 0) > 0 ? (
                     <span className="font-bold text-[#07c160]">{contact.recent_monthly!.toLocaleString()}<span className="text-xs text-gray-400 ml-1 font-normal">条</span></span>
@@ -252,13 +270,13 @@ export const ContactTable: React.FC<ContactTableProps> = ({ contacts, onContactC
                     <span className="text-sm text-gray-300">0</span>
                   )}
                 </td>
-                <td className="px-3 py-3.5 text-sm">
+                {showExtendedColumns && <td className="px-3 py-3.5 text-sm">
                   {(contact.avg_msg_len ?? 0) > 0 ? (
                     <span className="font-bold text-[#1d1d1f] dk-text">{contact.avg_msg_len!.toFixed(1)}<span className="text-xs text-gray-400 ml-1 font-normal">字</span></span>
                   ) : (
                     <span className="text-sm text-gray-300">-</span>
                   )}
-                </td>
+                </td>}
                 <td className="px-3 py-3.5 text-sm">
                   <span className="text-sm font-medium text-gray-600">
                     <RelativeTime ts={contact.last_message_ts} placeholder={contact.last_message_time || '-'} />
