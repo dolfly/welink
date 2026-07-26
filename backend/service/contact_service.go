@@ -41,19 +41,19 @@ type LateNightEntry struct {
 }
 
 type GlobalStats struct {
-	TotalFriends      int               `json:"total_friends"`
-	ZeroMsgFriends    int               `json:"zero_msg_friends"`
-	TotalMessages     int64             `json:"total_messages"`
-	BusiestDay        string            `json:"busiest_day"`
-	BusiestDayCount   int               `json:"busiest_day_count"`
-	MidnightChamp     string            `json:"midnight_champ"`
-	EmojiKing         string            `json:"emoji_king"`
-	MonthlyTrend      map[string]int    `json:"monthly_trend"`
-	GroupMonthlyTrend map[string]int    `json:"group_monthly_trend"`
-	HourlyHeatmap     [24]int           `json:"hourly_heatmap"`
+	TotalFriends       int              `json:"total_friends"`
+	ZeroMsgFriends     int              `json:"zero_msg_friends"`
+	TotalMessages      int64            `json:"total_messages"`
+	BusiestDay         string           `json:"busiest_day"`
+	BusiestDayCount    int              `json:"busiest_day_count"`
+	MidnightChamp      string           `json:"midnight_champ"`
+	EmojiKing          string           `json:"emoji_king"`
+	MonthlyTrend       map[string]int   `json:"monthly_trend"`
+	GroupMonthlyTrend  map[string]int   `json:"group_monthly_trend"`
+	HourlyHeatmap      [24]int          `json:"hourly_heatmap"`
 	GroupHourlyHeatmap [24]int          `json:"group_hourly_heatmap"`
-	TypeMix           map[string]int    `json:"type_mix"`
-	LateNightRanking  []LateNightEntry  `json:"late_night_ranking"`
+	TypeMix            map[string]int   `json:"type_mix"`
+	LateNightRanking   []LateNightEntry `json:"late_night_ranking"`
 }
 
 type WordCount struct {
@@ -70,52 +70,52 @@ type MoneyEvent struct {
 
 // ReplyRhythm 回复节奏统计
 type ReplyRhythm struct {
-	MyAvgSeconds    float64 `json:"my_avg_seconds"`    // 我的平均回复时间（秒）
-	TheirAvgSeconds float64 `json:"their_avg_seconds"` // 对方的平均回复时间（秒）
-	MyMedianSeconds float64 `json:"my_median_seconds"`
+	MyAvgSeconds       float64 `json:"my_avg_seconds"`    // 我的平均回复时间（秒）
+	TheirAvgSeconds    float64 `json:"their_avg_seconds"` // 对方的平均回复时间（秒）
+	MyMedianSeconds    float64 `json:"my_median_seconds"`
 	TheirMedianSeconds float64 `json:"their_median_seconds"`
-	MyQuickReplies  int     `json:"my_quick_replies"`  // 我 60 秒内回复次数
-	TheirQuickReplies int   `json:"their_quick_replies"`
-	MySlowReplies   int     `json:"my_slow_replies"`   // 我 1 小时以上回复次数
-	TheirSlowReplies int    `json:"their_slow_replies"`
-	MyTotalReplies  int     `json:"my_total_replies"`
-	TheirTotalReplies int   `json:"their_total_replies"`
+	MyQuickReplies     int     `json:"my_quick_replies"` // 我 60 秒内回复次数
+	TheirQuickReplies  int     `json:"their_quick_replies"`
+	MySlowReplies      int     `json:"my_slow_replies"` // 我 1 小时以上回复次数
+	TheirSlowReplies   int     `json:"their_slow_replies"`
+	MyTotalReplies     int     `json:"my_total_replies"`
+	TheirTotalReplies  int     `json:"their_total_replies"`
 	// 按时段统计平均回复秒数（0-23h）
-	MyHourlyAvg     [24]float64 `json:"my_hourly_avg"`
-	TheirHourlyAvg  [24]float64 `json:"their_hourly_avg"`
+	MyHourlyAvg    [24]float64 `json:"my_hourly_avg"`
+	TheirHourlyAvg [24]float64 `json:"their_hourly_avg"`
 }
 
 type ContactDetail struct {
-	HourlyDist        [24]int        `json:"hourly_dist"`
-	WeeklyDist        [7]int         `json:"weekly_dist"`
-	DailyHeatmap      map[string]int `json:"daily_heatmap"` // "2023-01-15" -> count
-	TheirMonthlyTrend map[string]int `json:"their_monthly_trend"` // "2024-01" -> count（对方）
-	MyMonthlyTrend    map[string]int `json:"my_monthly_trend"`    // "2024-01" -> count（我）
-	LateNightCount    int64          `json:"late_night_count"`
-	MoneyCount        int64          `json:"money_count"`         // 红包+转账总数
-	RedPacketCount    int64          `json:"red_packet_count"`    // 红包次数
-	TransferCount     int64          `json:"transfer_count"`      // 转账次数
-	MoneyTimeline     []MoneyEvent   `json:"money_timeline"`      // 红包/转账时间线
-	InitiationCnt     int64              `json:"initiation_count"`    // 主动发起对话次数（间隔>6h）
+	HourlyDist        [24]int            `json:"hourly_dist"`
+	WeeklyDist        [7]int             `json:"weekly_dist"`
+	DailyHeatmap      map[string]int     `json:"daily_heatmap"`       // "2023-01-15" -> count
+	TheirMonthlyTrend map[string]int     `json:"their_monthly_trend"` // "2024-01" -> count（对方）
+	MyMonthlyTrend    map[string]int     `json:"my_monthly_trend"`    // "2024-01" -> count（我）
+	LateNightCount    int64              `json:"late_night_count"`
+	MoneyCount        int64              `json:"money_count"`      // 红包+转账总数
+	RedPacketCount    int64              `json:"red_packet_count"` // 红包次数
+	TransferCount     int64              `json:"transfer_count"`   // 转账次数
+	MoneyTimeline     []MoneyEvent       `json:"money_timeline"`   // 红包/转账时间线
+	InitiationCnt     int64              `json:"initiation_count"` // 主动发起对话次数（间隔>6h）
 	TotalSessions     int64              `json:"total_sessions"`
 	ReplyRhythm       *ReplyRhythm       `json:"reply_rhythm,omitempty"`
-	DensityCurve      map[string]float64 `json:"density_curve,omitempty"` // "2024-01" → 月均消息间隔（秒）
+	DensityCurve      map[string]float64 `json:"density_curve,omitempty"`    // "2024-01" → 月均消息间隔（秒）
 	IntervalBuckets   map[string]int     `json:"interval_buckets,omitempty"` // "10s"/"1min"/"10min"/"1h"/"6h"/"1d" → 次数
 }
 
 type ContactStatsExtended struct {
 	model.ContactStats
-	FirstMsg         string             `json:"first_msg"`
-	EmojiCnt         int                `json:"emoji_count"`
-	TypePct          map[string]float64 `json:"type_pct"`
-	TypeCnt          map[string]int     `json:"type_cnt"`
-	SharedGroupsCount int               `json:"shared_groups_count"`
-	PeakMonthly   int64   `json:"peak_monthly"`
-	PeakPeriod    string  `json:"peak_period"`
-	RecentMonthly int64   `json:"recent_monthly"`
-	RecallCount   int64   `json:"recall_count"`
-	AvgMsgLen     float64 `json:"avg_msg_len"`
-	MoneyCount    int64   `json:"money_count"`
+	FirstMsg          string             `json:"first_msg"`
+	EmojiCnt          int                `json:"emoji_count"`
+	TypePct           map[string]float64 `json:"type_pct"`
+	TypeCnt           map[string]int     `json:"type_cnt"`
+	SharedGroupsCount int                `json:"shared_groups_count"`
+	PeakMonthly       int64              `json:"peak_monthly"`
+	PeakPeriod        string             `json:"peak_period"`
+	RecentMonthly     int64              `json:"recent_monthly"`
+	RecallCount       int64              `json:"recall_count"`
+	AvgMsgLen         float64            `json:"avg_msg_len"`
+	MoneyCount        int64              `json:"money_count"`
 }
 
 // classifyMsgType 统一消息类型分类（低 16 位为真实 local_type）
@@ -193,60 +193,124 @@ type AnalysisParams struct {
 }
 
 type ContactService struct {
-	dbMgr            *db.DBManager
-	msgRepo          *repository.MessageRepository
-	params           AnalysisParams
-	paramsMu         sync.RWMutex
-	tz               *time.Location
-	segmenter        gse.Segmenter
-	segmenterMu      sync.Mutex // 保护 segmenter 不被并发调用（gse 非线程安全）
-	cache            []ContactStatsExtended
-	global           GlobalStats
-	cacheMu          sync.RWMutex
-	isIndexing       bool
-	isInitialized    bool // 标记初始化是否完成
+	dbMgr         *db.DBManager
+	msgRepo       *repository.MessageRepository
+	params        AnalysisParams
+	paramsMu      sync.RWMutex
+	tz            *time.Location
+	segmenter     gse.Segmenter
+	segmenterMu   sync.Mutex // 保护 segmenter 不被并发调用（gse 非线程安全）
+	cache         []ContactStatsExtended
+	global        GlobalStats
+	cacheMu       sync.RWMutex
+	isIndexing    bool
+	isInitialized bool // 标记初始化是否完成
 	// 进度快照（由 performAnalysis 更新，/api/status 读取）
-	progressTotal    int    // 本轮总联系人数，0 = 未开始
-	progressDone     int    // 已完成联系人数
-	progressCurrent  string // 正在处理的联系人 username（显示用）
-	progressStart    time.Time
-	cancelFn         func() // 中止当前 performAnalysis；未在索引时为 nil
-	lastInitErr      string
-	groupListCache       []GroupInfo                      // 群聊列表缓存
-	groupListReady       bool
-	groupListWait        chan struct{}                    // 非 nil 表示已有 goroutine 正在构建群列表
-	groupDetailCache     map[string]*GroupDetail          // 群聊详情内存缓存（lazy load）
-	groupDetailMu        sync.RWMutex
-	groupDetailComputing map[string]bool                  // 正在后台计算中的群聊
-	groupRelCache        map[string]*RelationshipGraph    // 群聊人物关系缓存
-	groupRelComputing    map[string]bool
-	anniversaryDetected  []DetectedEvent                  // 纪念日缓存
-	anniversaryMilestones []FriendMilestone
-	anniversaryCacheDay  string                           // 缓存日期（当天有效）
-	anniversaryMu        sync.RWMutex
-	filterFrom       int64 // 全局时间范围过滤（Unix 秒，0=不限）
-	filterTo         int64
-	calendarHeatmap  map[string]int // 全局每日消息量（联系人+群聊），performAnalysis 后可读
-	similarityCache  *SimilarityResult // 联系人相似度缓存
-	similarityMu     sync.RWMutex
-	moneyCache       *MoneyOverview    // 红包转账缓存
-	moneyMu          sync.RWMutex
-	selfPortraitCache *SelfPortrait    // 个人自画像缓存
-	selfPortraitMu    sync.RWMutex
-	socialBreadthCache []SocialBreadthPoint // 每日社交广度缓存
-	socialBreadthMu    sync.RWMutex
-	urlCollectionCache *URLCollectionResult // URL 收藏夹缓存
-	urlCollectionMu    sync.RWMutex
-	monthlyByUsername  map[string]map[string]MonthBucket // 关系预测用：username -> "YYYY-MM" -> {total, mine}
-	monthlyByUserMu    sync.RWMutex
-	latencyByUsername  map[string]LatencyStats // 关系预测用：username -> 回复时延统计
-	latencyByUserMu    sync.RWMutex
-	activeDatesCache   map[string][]string // 微信视图用：username -> 有记录的日期列表（静态库不变，长期缓存）
-	activeDatesMu      sync.RWMutex
-	contactAnalysisMu  sync.RWMutex
-	wordCloudCache     map[string][]WordCount
-	contactDetailCache map[string]*ContactDetail
-	sentimentCache     map[string]*SentimentResult
+	progressTotal             int    // 本轮总联系人数，0 = 未开始
+	progressDone              int    // 已完成联系人数
+	progressCurrent           string // 正在处理的联系人 username（显示用）
+	progressStart             time.Time
+	cancelFn                  func() // 中止当前 performAnalysis；未在索引时为 nil
+	lastInitErr               string
+	groupListCache            []GroupInfo // 群聊列表缓存
+	groupListReady            bool
+	groupListWait             chan struct{}           // 非 nil 表示已有 goroutine 正在构建群列表
+	groupDetailCache          map[string]*GroupDetail // 群聊详情内存缓存（lazy load）
+	groupDetailCacheOrder     []string
+	groupDetailMu             sync.RWMutex
+	groupDetailComputing      map[string]bool               // 正在后台计算中的群聊
+	groupRelCache             map[string]*RelationshipGraph // 群聊人物关系缓存
+	groupRelCacheOrder        []string
+	groupRelComputing         map[string]bool
+	groupAnalysisGeneration  uint64
+	anniversaryDetected       []DetectedEvent // 纪念日缓存
+	anniversaryMilestones     []FriendMilestone
+	anniversaryCacheDay       string // 缓存日期（当天有效）
+	anniversaryMu             sync.RWMutex
+	filterFrom                int64 // 全局时间范围过滤（Unix 秒，0=不限）
+	filterTo                  int64
+	calendarHeatmap           map[string]int    // 全局每日消息量（联系人+群聊），performAnalysis 后可读
+	similarityCache           *SimilarityResult // 联系人相似度缓存
+	similarityMu              sync.RWMutex
+	moneyCache                *MoneyOverview // 红包转账缓存
+	moneyMu                   sync.RWMutex
+	selfPortraitCache         *SelfPortrait // 个人自画像缓存
+	selfPortraitMu            sync.RWMutex
+	socialBreadthCache        []SocialBreadthPoint // 每日社交广度缓存
+	socialBreadthMu           sync.RWMutex
+	urlCollectionCache        *URLCollectionResult // URL 收藏夹缓存
+	urlCollectionMu           sync.RWMutex
+	monthlyByUsername         map[string]map[string]MonthBucket // 关系预测用：username -> "YYYY-MM" -> {total, mine}
+	monthlyByUserMu           sync.RWMutex
+	latencyByUsername         map[string]LatencyStats // 关系预测用：username -> 回复时延统计
+	latencyByUserMu           sync.RWMutex
+	activeDatesCache          map[string][]string // 微信视图用：username -> 有记录的日期列表（静态库不变，长期缓存）
+	activeDatesMu             sync.RWMutex
+	contactAnalysisMu         sync.RWMutex
+	wordCloudCache            map[string][]WordCount
+	wordCloudCacheOrder       []string
+	contactDetailCache        map[string]*ContactDetail
+	contactDetailCacheOrder   []string
+	sentimentCache            map[string]*SentimentResult
+	sentimentCacheOrder       []string
+	contactAnalysisGeneration uint64
+	contactAnalysisFlights    analysisFlightGroup
+}
+
+const contactAnalysisCacheLimit = 128
+const groupAnalysisCacheLimit = 32
+
+type analysisFlightCall struct {
+	done  chan struct{}
+	value interface{}
+	err   error
+}
+
+type analysisFlightGroup struct {
+	mu    sync.Mutex
+	calls map[string]*analysisFlightCall
+}
+
+func (g *analysisFlightGroup) Do(key string, fn func() (interface{}, error)) (interface{}, error, bool) {
+	g.mu.Lock()
+	if call := g.calls[key]; call != nil {
+		g.mu.Unlock()
+		<-call.done
+		return call.value, call.err, true
+	}
+	if g.calls == nil {
+		g.calls = make(map[string]*analysisFlightCall)
+	}
+	call := &analysisFlightCall{done: make(chan struct{})}
+	g.calls[key] = call
+	g.mu.Unlock()
+
+	func() {
+		defer func() {
+			g.mu.Lock()
+			delete(g.calls, key)
+			close(call.done)
+			g.mu.Unlock()
+		}()
+		call.value, call.err = fn()
+	}()
+	return call.value, call.err, false
+}
+
+func storeBounded[K comparable, V any](cache map[K]V, order *[]K, key K, value V, limit int) {
+	for i, existing := range *order {
+		if existing == key {
+			*order = append((*order)[:i], (*order)[i+1:]...)
+			break
+		}
+	}
+	cache[key] = value
+	*order = append(*order, key)
+	for len(*order) > limit {
+		oldest := (*order)[0]
+		*order = (*order)[1:]
+		delete(cache, oldest)
+	}
 }
 
 // MonthBucket 单月消息桶，用于关系预测的主动占比分析
@@ -335,10 +399,10 @@ func NewContactService(mgr *db.DBManager, params AnalysisParams, defaultInitFrom
 		loc = time.FixedZone("CST", 8*3600)
 	}
 	svc := &ContactService{
-		dbMgr:            mgr,
-		msgRepo:          repository.NewMessageRepository(mgr),
-		params:           params,
-		tz:               loc,
+		dbMgr:                mgr,
+		msgRepo:              repository.NewMessageRepository(mgr),
+		params:               params,
+		tz:                   loc,
 		groupDetailCache:     make(map[string]*GroupDetail),
 		groupDetailComputing: make(map[string]bool),
 		groupRelCache:        make(map[string]*RelationshipGraph),
@@ -394,9 +458,12 @@ func (s *ContactService) Reinitialize(from, to int64) {
 	s.groupListCache = nil
 	s.groupListReady = false
 	s.groupDetailCache = make(map[string]*GroupDetail)
+	s.groupDetailCacheOrder = nil
 	s.groupDetailComputing = make(map[string]bool)
 	s.groupRelCache = make(map[string]*RelationshipGraph)
+	s.groupRelCacheOrder = nil
 	s.groupRelComputing = make(map[string]bool)
+	s.groupAnalysisGeneration++
 	s.groupDetailMu.Unlock()
 
 	s.similarityMu.Lock()
@@ -416,8 +483,12 @@ func (s *ContactService) Reinitialize(from, to int64) {
 	s.urlCollectionMu.Unlock()
 	s.contactAnalysisMu.Lock()
 	s.wordCloudCache = nil
+	s.wordCloudCacheOrder = nil
 	s.contactDetailCache = nil
+	s.contactDetailCacheOrder = nil
 	s.sentimentCache = nil
+	s.sentimentCacheOrder = nil
+	s.contactAnalysisGeneration++
 	s.contactAnalysisMu.Unlock()
 
 	go func() {
@@ -490,7 +561,9 @@ func (s *ContactService) timeWhere() string {
 
 func (s *ContactService) performAnalysisCtx(ctx context.Context) {
 	rows, err := s.dbMgr.ContactDB.Query("SELECT username, nick_name, remark, COALESCE(alias,''), flag, COALESCE(big_head_url,''), COALESCE(small_head_url,'') FROM contact WHERE verify_flag=0")
-	if err != nil { return }
+	if err != nil {
+		return
+	}
 	defer rows.Close()
 
 	var contacts []model.Contact
@@ -498,8 +571,12 @@ func (s *ContactService) performAnalysisCtx(ctx context.Context) {
 		var c model.Contact
 		rows.Scan(&c.Username, &c.Nickname, &c.Remark, &c.Alias, &c.Flag, &c.BigHeadURL, &c.SmallHeadURL)
 		uname := strings.ToLower(c.Username)
-		if strings.HasSuffix(uname, "@chatroom") || strings.HasPrefix(uname, "gh_") || uname == "" { continue }
-		if (c.Flag&3 != 0) || (strings.TrimSpace(c.Remark) != "") { contacts = append(contacts, c) }
+		if strings.HasSuffix(uname, "@chatroom") || strings.HasPrefix(uname, "gh_") || uname == "" {
+			continue
+		}
+		if (c.Flag&3 != 0) || (strings.TrimSpace(c.Remark) != "") {
+			contacts = append(contacts, c)
+		}
 	}
 
 	type lateEntry struct {
@@ -514,8 +591,8 @@ func (s *ContactService) performAnalysisCtx(ctx context.Context) {
 	globalDaily := make(map[string]int)
 	globalHourly := [24]int{}
 	globalTypeMix := make(map[string]int)
-	monthlyByUser := make(map[string]map[string]MonthBucket, len(contacts))    // 关系预测用
-	latencyByUser := make(map[string]LatencyStats, len(contacts))              // 关系预测响应时延用
+	monthlyByUser := make(map[string]map[string]MonthBucket, len(contacts)) // 关系预测用
+	latencyByUser := make(map[string]LatencyStats, len(contacts))           // 关系预测响应时延用
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, s.params.WorkerCount)
@@ -538,7 +615,9 @@ func (s *ContactService) performAnalysisCtx(ctx context.Context) {
 		}
 		wg.Add(1)
 		go func(idx int) {
-			defer wg.Done(); sem <- struct{}{}; defer func() { <-sem }()
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
 			if ctx.Err() != nil { // 进入 worker 后再检查一次
 				return
 			}
@@ -590,11 +669,20 @@ func (s *ContactService) performAnalysisCtx(ctx context.Context) {
 				mdb.QueryRow(fmt.Sprintf("SELECT rowid FROM Name2Id WHERE user_name = %q", c.Username)).Scan(&contactRowID)
 
 				mRows, err := mdb.Query(fmt.Sprintf("SELECT local_type, create_time, CASE WHEN (local_type & 65535) IN (1,49) THEN message_content END, COALESCE(WCDB_CT_message_content,0), COALESCE(real_sender_id,0) FROM [%s]%s", tableName, timeWhere))
-				if err != nil { continue }
+				if err != nil {
+					continue
+				}
 				for mRows.Next() {
-					var lt int; var ts int64; var rawContent []byte; var ct int64; var senderID int64
+					var lt int
+					var ts int64
+					var rawContent []byte
+					var ct int64
+					var senderID int64
 					mRows.Scan(&lt, &ts, &rawContent, &ct, &senderID)
-					if lt&0xFFFF == 10000 { ext.RecallCount++; continue }
+					if lt&0xFFFF == 10000 {
+						ext.RecallCount++
+						continue
+					}
 					content := ""
 					if needsDecodedContent(lt) {
 						content = decodeGroupContent(rawContent, ct)
@@ -607,20 +695,30 @@ func (s *ContactService) performAnalysisCtx(ctx context.Context) {
 						ext.TheirMessages++
 					}
 
-					if ts < globalFirstTs { globalFirstTs = ts }
-					if ts > globalLastTs { globalLastTs = ts }
+					if ts < globalFirstTs {
+						globalFirstTs = ts
+					}
+					if ts > globalLastTs {
+						globalLastTs = ts
+					}
 
 					dt := time.Unix(ts, 0).In(s.tz)
 					h := dt.Hour()
-					if h >= s.params.LateNightStartHour && h < s.params.LateNightEndHour { lateNightCnt++ }
+					if h >= s.params.LateNightStartHour && h < s.params.LateNightEndHour {
+						lateNightCnt++
+					}
 					localDaily[dt.Format("2006-01-02")]++
 					localHourly[h]++
 					mk := dt.Format("2006-01")
 					b := monthly[mk]
 					b.Total++
-					if isMine { b.Mine++ }
+					if isMine {
+						b.Mine++
+					}
 					monthly[mk] = b
-					if ts >= recentCutoff.Unix() { ext.RecentMonthly++ }
+					if ts >= recentCutoff.Unix() {
+						ext.RecentMonthly++
+					}
 					if ts >= latencyCutoff6 {
 						transitions = append(transitions, tsKind{ts, isMine})
 					}
@@ -629,7 +727,8 @@ func (s *ContactService) performAnalysisCtx(ctx context.Context) {
 					if typeName == "文本" {
 						if content != "" && !s.isSys(content) {
 							charLen := int64(len([]rune(content)))
-							totalTextLen += charLen; textCount++
+							totalTextLen += charLen
+							textCount++
 							if isMine {
 								ext.MyChars += charLen
 							} else {
@@ -664,12 +763,19 @@ func (s *ContactService) performAnalysisCtx(ctx context.Context) {
 			}
 			mu.Unlock()
 			if ext.TotalMessages > 0 {
-				ext.FirstMessage = s.formatTime(globalFirstTs); ext.LastMessage = s.formatTime(globalLastTs)
-				ext.FirstMessageTs = globalFirstTs; ext.LastMessageTs = globalLastTs
+				ext.FirstMessage = s.formatTime(globalFirstTs)
+				ext.LastMessage = s.formatTime(globalLastTs)
+				ext.FirstMessageTs = globalFirstTs
+				ext.LastMessageTs = globalLastTs
 				for m, b := range monthly {
-					if int64(b.Total) > ext.PeakMonthly { ext.PeakMonthly = int64(b.Total); ext.PeakPeriod = m }
+					if int64(b.Total) > ext.PeakMonthly {
+						ext.PeakMonthly = int64(b.Total)
+						ext.PeakPeriod = m
+					}
 				}
-				if textCount > 0 { ext.AvgMsgLen = float64(totalTextLen) / float64(textCount) }
+				if textCount > 0 {
+					ext.AvgMsgLen = float64(totalTextLen) / float64(textCount)
+				}
 				ext.TypePct = make(map[string]float64)
 				ext.TypeCnt = make(map[string]int)
 				for k, v := range typeCounts {
@@ -678,8 +784,12 @@ func (s *ContactService) performAnalysisCtx(ctx context.Context) {
 				}
 			}
 			name := c.Remark
-			if name == "" { name = c.Nickname }
-			if name == "" { name = c.Username }
+			if name == "" {
+				name = c.Nickname
+			}
+			if name == "" {
+				name = c.Username
+			}
 			lateNightData[idx] = lateEntry{name: name, lateNightCount: lateNightCnt, totalMessages: ext.TotalMessages}
 			result[idx] = ext
 			if len(monthly) > 0 {
@@ -756,12 +866,16 @@ func (s *ContactService) performAnalysisCtx(ctx context.Context) {
 	sort.Slice(lateNightData, func(i, j int) bool { return lateNightData[i].lateNightCount > lateNightData[j].lateNightCount })
 	var lateNightRanking []LateNightEntry
 	for _, e := range lateNightData {
-		if e.totalMessages < s.params.LateNightMinMessages || e.lateNightCount == 0 { continue }
+		if e.totalMessages < s.params.LateNightMinMessages || e.lateNightCount == 0 {
+			continue
+		}
 		ratio := float64(e.lateNightCount) / float64(e.totalMessages) * 100
 		lateNightRanking = append(lateNightRanking, LateNightEntry{
 			Name: e.name, LateNightCount: e.lateNightCount, TotalMessages: e.totalMessages, Ratio: ratio,
 		})
-		if len(lateNightRanking) >= s.params.LateNightTopN { break }
+		if len(lateNightRanking) >= s.params.LateNightTopN {
+			break
+		}
 	}
 
 	s.cacheMu.Lock()
@@ -774,8 +888,16 @@ func (s *ContactService) performAnalysisCtx(ctx context.Context) {
 	}
 
 	s.global = GlobalStats{
-		TotalFriends:     len(result),
-		ZeroMsgFriends:   func() int { c := 0; for _, r := range result { if r.TotalMessages == 0 { c++ } }; return c }(),
+		TotalFriends: len(result),
+		ZeroMsgFriends: func() int {
+			c := 0
+			for _, r := range result {
+				if r.TotalMessages == 0 {
+					c++
+				}
+			}
+			return c
+		}(),
 		TotalMessages:    totalMessages,
 		HourlyHeatmap:    globalHourly,
 		TypeMix:          globalTypeMix,
@@ -793,29 +915,50 @@ func (s *ContactService) performAnalysisCtx(ctx context.Context) {
 		GroupHourlyHeatmap: s.buildGroupHourlyHeatmap(),
 	}
 	maxDayVal := 0
-	for d, c := range globalDaily { if c > maxDayVal { s.global.BusiestDay = d; s.global.BusiestDayCount = c; maxDayVal = c } }
+	for d, c := range globalDaily {
+		if c > maxDayVal {
+			s.global.BusiestDay = d
+			s.global.BusiestDayCount = c
+			maxDayVal = c
+		}
+	}
 	if len(result) > 0 {
 		maxEmoji := -1
-		for _, r := range result { if r.EmojiCnt > maxEmoji { maxEmoji = r.EmojiCnt; name := r.Nickname; if r.Remark != "" { name = r.Remark }; s.global.EmojiKing = name } }
+		for _, r := range result {
+			if r.EmojiCnt > maxEmoji {
+				maxEmoji = r.EmojiCnt
+				name := r.Nickname
+				if r.Remark != "" {
+					name = r.Remark
+				}
+				s.global.EmojiKing = name
+			}
+		}
 	}
 	// 构建全局日历热力图（联系人 + 群聊）
 	calHeatmap := make(map[string]int, len(globalDaily))
-	for d, c := range globalDaily { calHeatmap[d] = c }
-	for d, c := range s.buildGroupDailyHeatmap() { calHeatmap[d] += c }
+	for d, c := range globalDaily {
+		calHeatmap[d] = c
+	}
+	for d, c := range s.buildGroupDailyHeatmap() {
+		calHeatmap[d] += c
+	}
 	s.calendarHeatmap = calHeatmap
 	s.cacheMu.Unlock()
 }
 
 // FilteredStats 时间范围过滤后的统计结果
 type FilteredStats struct {
-	Contacts  []ContactStatsExtended `json:"contacts"`
-	GlobalStats GlobalStats          `json:"global_stats"`
+	Contacts    []ContactStatsExtended `json:"contacts"`
+	GlobalStats GlobalStats            `json:"global_stats"`
 }
 
 // AnalyzeWithFilter 对指定时间范围内的消息做统计（不写入缓存）
 func (s *ContactService) AnalyzeWithFilter(from, to int64) *FilteredStats {
 	rows, err := s.dbMgr.ContactDB.Query("SELECT username, nick_name, remark, COALESCE(alias,''), flag, COALESCE(big_head_url,''), COALESCE(small_head_url,'') FROM contact WHERE verify_flag=0")
-	if err != nil { return nil }
+	if err != nil {
+		return nil
+	}
 	defer rows.Close()
 
 	var contacts []model.Contact
@@ -823,8 +966,12 @@ func (s *ContactService) AnalyzeWithFilter(from, to int64) *FilteredStats {
 		var c model.Contact
 		rows.Scan(&c.Username, &c.Nickname, &c.Remark, &c.Alias, &c.Flag, &c.BigHeadURL, &c.SmallHeadURL)
 		uname := strings.ToLower(c.Username)
-		if strings.HasSuffix(uname, "@chatroom") || strings.HasPrefix(uname, "gh_") || uname == "" { continue }
-		if (c.Flag&3 != 0) || (strings.TrimSpace(c.Remark) != "") { contacts = append(contacts, c) }
+		if strings.HasSuffix(uname, "@chatroom") || strings.HasPrefix(uname, "gh_") || uname == "" {
+			continue
+		}
+		if (c.Flag&3 != 0) || (strings.TrimSpace(c.Remark) != "") {
+			contacts = append(contacts, c)
+		}
 	}
 
 	type lateEntry struct {
@@ -855,7 +1002,9 @@ func (s *ContactService) AnalyzeWithFilter(from, to int64) *FilteredStats {
 	for i := range contacts {
 		wg.Add(1)
 		go func(idx int) {
-			defer wg.Done(); sem <- struct{}{}; defer func() { <-sem }()
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
 			c := contacts[idx]
 			tableName := db.GetTableName(c.Username)
 			ext := ContactStatsExtended{ContactStats: model.ContactStats{Contact: c}}
@@ -871,9 +1020,14 @@ func (s *ContactService) AnalyzeWithFilter(from, to int64) *FilteredStats {
 			for _, mdb := range s.msgRepo.DBsForUsername(c.Username) {
 				query := fmt.Sprintf("SELECT local_type, create_time, CASE WHEN (local_type & 65535) IN (1,49) THEN message_content END, COALESCE(WCDB_CT_message_content,0) FROM [%s]%s", tableName, timeWhere)
 				mRows, err := mdb.Query(query)
-				if err != nil { continue }
+				if err != nil {
+					continue
+				}
 				for mRows.Next() {
-					var lt int; var ts int64; var rawContent []byte; var ct int64
+					var lt int
+					var ts int64
+					var rawContent []byte
+					var ct int64
 					mRows.Scan(&lt, &ts, &rawContent, &ct)
 					content := ""
 					if needsDecodedContent(lt) {
@@ -881,12 +1035,18 @@ func (s *ContactService) AnalyzeWithFilter(from, to int64) *FilteredStats {
 					}
 					ext.TotalMessages++
 
-					if ts < globalFirstTs { globalFirstTs = ts }
-					if ts > globalLastTs { globalLastTs = ts }
+					if ts < globalFirstTs {
+						globalFirstTs = ts
+					}
+					if ts > globalLastTs {
+						globalLastTs = ts
+					}
 
 					dt := time.Unix(ts, 0).In(s.tz)
 					h := dt.Hour()
-					if h >= s.params.LateNightStartHour && h < s.params.LateNightEndHour { lateNightCnt++ }
+					if h >= s.params.LateNightStartHour && h < s.params.LateNightEndHour {
+						lateNightCnt++
+					}
 					localDaily[dt.Format("2006-01-02")]++
 					localHourly[h]++
 
@@ -904,13 +1064,21 @@ func (s *ContactService) AnalyzeWithFilter(from, to int64) *FilteredStats {
 				mRows.Close()
 			}
 			mu.Lock()
-			for day, count := range localDaily { globalDaily[day] += count }
-			for hour, count := range localHourly { globalHourly[hour] += count }
-			for typeName, count := range typeCounts { globalTypeMix[typeName] += count }
+			for day, count := range localDaily {
+				globalDaily[day] += count
+			}
+			for hour, count := range localHourly {
+				globalHourly[hour] += count
+			}
+			for typeName, count := range typeCounts {
+				globalTypeMix[typeName] += count
+			}
 			mu.Unlock()
 			if ext.TotalMessages > 0 {
-				ext.FirstMessage = s.formatTime(globalFirstTs); ext.LastMessage = s.formatTime(globalLastTs)
-				ext.FirstMessageTs = globalFirstTs; ext.LastMessageTs = globalLastTs
+				ext.FirstMessage = s.formatTime(globalFirstTs)
+				ext.LastMessage = s.formatTime(globalLastTs)
+				ext.FirstMessageTs = globalFirstTs
+				ext.LastMessageTs = globalLastTs
 				ext.TypePct = make(map[string]float64)
 				ext.TypeCnt = make(map[string]int)
 				for k, v := range typeCounts {
@@ -919,8 +1087,12 @@ func (s *ContactService) AnalyzeWithFilter(from, to int64) *FilteredStats {
 				}
 			}
 			name := c.Remark
-			if name == "" { name = c.Nickname }
-			if name == "" { name = c.Username }
+			if name == "" {
+				name = c.Nickname
+			}
+			if name == "" {
+				name = c.Username
+			}
 			lateNightData[idx] = lateEntry{name: name, lateNightCount: lateNightCnt, totalMessages: ext.TotalMessages}
 			result[idx] = ext
 		}(i)
@@ -931,20 +1103,34 @@ func (s *ContactService) AnalyzeWithFilter(from, to int64) *FilteredStats {
 	sort.Slice(lateNightData, func(i, j int) bool { return lateNightData[i].lateNightCount > lateNightData[j].lateNightCount })
 	var lateNightRanking []LateNightEntry
 	for _, e := range lateNightData {
-		if e.totalMessages < s.params.LateNightMinMessages || e.lateNightCount == 0 { continue }
+		if e.totalMessages < s.params.LateNightMinMessages || e.lateNightCount == 0 {
+			continue
+		}
 		ratio := float64(e.lateNightCount) / float64(e.totalMessages) * 100
 		lateNightRanking = append(lateNightRanking, LateNightEntry{
 			Name: e.name, LateNightCount: e.lateNightCount, TotalMessages: e.totalMessages, Ratio: ratio,
 		})
-		if len(lateNightRanking) >= s.params.LateNightTopN { break }
+		if len(lateNightRanking) >= s.params.LateNightTopN {
+			break
+		}
 	}
 
 	var totalMessages int64 = 0
-	for _, r := range result { totalMessages += r.TotalMessages }
+	for _, r := range result {
+		totalMessages += r.TotalMessages
+	}
 
 	gs := GlobalStats{
-		TotalFriends:     len(result),
-		ZeroMsgFriends:   func() int { c := 0; for _, r := range result { if r.TotalMessages == 0 { c++ } }; return c }(),
+		TotalFriends: len(result),
+		ZeroMsgFriends: func() int {
+			c := 0
+			for _, r := range result {
+				if r.TotalMessages == 0 {
+					c++
+				}
+			}
+			return c
+		}(),
 		TotalMessages:    totalMessages,
 		HourlyHeatmap:    globalHourly,
 		TypeMix:          globalTypeMix,
@@ -952,16 +1138,27 @@ func (s *ContactService) AnalyzeWithFilter(from, to int64) *FilteredStats {
 		MonthlyTrend: func() map[string]int {
 			m := make(map[string]int)
 			for day, cnt := range globalDaily {
-				if len(day) >= 7 { m[day[:7]] += cnt }
+				if len(day) >= 7 {
+					m[day[:7]] += cnt
+				}
 			}
 			return m
 		}(),
 	}
-	for d, c := range globalDaily { if c > gs.BusiestDayCount { gs.BusiestDay = d; gs.BusiestDayCount = c } }
+	for d, c := range globalDaily {
+		if c > gs.BusiestDayCount {
+			gs.BusiestDay = d
+			gs.BusiestDayCount = c
+		}
+	}
 
 	// filter out zero-message contacts from result
 	var nonEmpty []ContactStatsExtended
-	for _, r := range result { if r.TotalMessages > 0 { nonEmpty = append(nonEmpty, r) } }
+	for _, r := range result {
+		if r.TotalMessages > 0 {
+			nonEmpty = append(nonEmpty, r)
+		}
+	}
 
 	return &FilteredStats{Contacts: nonEmpty, GlobalStats: gs}
 }
@@ -973,8 +1170,35 @@ func (s *ContactService) GetContactDetail(username string) *ContactDetail {
 		s.contactAnalysisMu.RUnlock()
 		return cached
 	}
+	generation := s.contactAnalysisGeneration
 	s.contactAnalysisMu.RUnlock()
 
+	value, _, _ := s.contactAnalysisFlights.Do(
+		fmt.Sprintf("detail:%d:%s", generation, username),
+		func() (interface{}, error) {
+			s.contactAnalysisMu.RLock()
+			if cached := s.contactDetailCache[username]; cached != nil {
+				s.contactAnalysisMu.RUnlock()
+				return cached, nil
+			}
+			s.contactAnalysisMu.RUnlock()
+
+			detail := s.computeContactDetail(username)
+			s.contactAnalysisMu.Lock()
+			if s.contactAnalysisGeneration == generation {
+				if s.contactDetailCache == nil {
+					s.contactDetailCache = make(map[string]*ContactDetail)
+				}
+				storeBounded(s.contactDetailCache, &s.contactDetailCacheOrder, username, detail, contactAnalysisCacheLimit)
+			}
+			s.contactAnalysisMu.Unlock()
+			return detail, nil
+		},
+	)
+	return value.(*ContactDetail)
+}
+
+func (s *ContactService) computeContactDetail(username string) *ContactDetail {
 	tableName := db.GetTableName(username)
 	detail := &ContactDetail{
 		DailyHeatmap:      make(map[string]int),
@@ -994,7 +1218,7 @@ func (s *ContactService) GetContactDetail(username string) *ContactDetail {
 	var densityPrevTs int64
 	// 间隔分布桶: 10s / 1min / 10min / 1h / 6h / 1d
 	intervalBuckets := map[string]int{"10s": 0, "1min": 0, "10min": 0, "1h": 0, "6h": 0, "1d": 0}
-	var myReplyDelays []int64   // 我的回复间隔（秒）
+	var myReplyDelays []int64    // 我的回复间隔（秒）
 	var theirReplyDelays []int64 // 对方的回复间隔（秒）
 	type hourlyDelay struct {
 		total int64
@@ -1012,9 +1236,15 @@ func (s *ContactService) GetContactDetail(username string) *ContactDetail {
 
 		rows, err := mdb.Query(fmt.Sprintf(
 			"SELECT create_time, local_type, CASE WHEN (local_type & 65535)=49 THEN message_content END, COALESCE(WCDB_CT_message_content,0), COALESCE(real_sender_id,0) FROM [%s]%s%s", tableName, timeWhere, orderBy))
-		if err != nil { continue }
+		if err != nil {
+			continue
+		}
 		for rows.Next() {
-			var ts int64; var lt int; var rawContent []byte; var ct int64; var senderID int64
+			var ts int64
+			var lt int
+			var rawContent []byte
+			var ct int64
+			var senderID int64
 			rows.Scan(&ts, &lt, &rawContent, &ct, &senderID)
 			content := ""
 			if lt&0xFFFF == 49 {
@@ -1068,7 +1298,9 @@ func (s *ContactService) GetContactDetail(username string) *ContactDetail {
 				detail.TheirMonthlyTrend[month]++
 			}
 
-			if h >= s.params.LateNightStartHour && h < s.params.LateNightEndHour { detail.LateNightCount++ }
+			if h >= s.params.LateNightStartHour && h < s.params.LateNightEndHour {
+				detail.LateNightCount++
+			}
 
 			// 红包 / 转账检测
 			typeName := classifyMsgType(lt, content)
@@ -1166,10 +1398,6 @@ func (s *ContactService) GetContactDetail(username string) *ContactDetail {
 	// 间隔分布直方图
 	detail.IntervalBuckets = intervalBuckets
 
-	s.contactAnalysisMu.Lock()
-	if s.contactDetailCache == nil { s.contactDetailCache = make(map[string]*ContactDetail) }
-	s.contactDetailCache[username] = detail
-	s.contactAnalysisMu.Unlock()
 	return detail
 }
 
@@ -1183,14 +1411,14 @@ type URLEntry struct {
 	Contact  string `json:"contact"`  // 来源联系人显示名
 	Username string `json:"username"` // 来源联系人 wxid
 	IsMine   bool   `json:"is_mine"`
-	Context  string `json:"context"`  // 消息原文前 120 字符
+	Context  string `json:"context"` // 消息原文前 120 字符
 }
 
 // URLCollectionResult URL 收藏夹结果
 type URLCollectionResult struct {
-	Total   int                `json:"total"`
-	Domains map[string]int     `json:"domains"` // 域名 → 次数
-	URLs    []URLEntry         `json:"urls"`
+	Total   int            `json:"total"`
+	Domains map[string]int `json:"domains"` // 域名 → 次数
+	URLs    []URLEntry     `json:"urls"`
 }
 
 var urlRe = regexp.MustCompile(`https?://[^\s<>"'\x{3000}-\x{303F}\x{FF00}-\x{FFEF}]+`)
@@ -1247,7 +1475,7 @@ func (s *ContactService) GetURLCollection() *URLCollectionResult {
 			var urls []URLEntry
 			domainCount := make(map[string]int)
 
-			for _, mdb := range s.dbMgr.MessageDBs {
+			for _, mdb := range s.msgRepo.DBsForUsername(c.Username) {
 				var contactRowID int64 = -1
 				mdb.QueryRow(fmt.Sprintf("SELECT rowid FROM Name2Id WHERE user_name = %q", c.Username)).Scan(&contactRowID)
 
@@ -1330,7 +1558,7 @@ func extractDomain(url string) string {
 
 // SocialBreadthPoint 单日社交广度
 type SocialBreadthPoint struct {
-	Date          string `json:"date"`
+	Date           string `json:"date"`
 	UniqueContacts int    `json:"unique_contacts"`
 	TotalMessages  int    `json:"total_messages"`
 }
@@ -1371,7 +1599,7 @@ func (s *ContactService) GetSocialBreadth() []SocialBreadthPoint {
 			tableName := db.GetTableName(c.Username)
 			local := make(map[string]int) // date → count
 
-			for _, mdb := range s.dbMgr.MessageDBs {
+			for _, mdb := range s.msgRepo.DBsForUsername(c.Username) {
 				rows, err := mdb.Query(fmt.Sprintf(
 					"SELECT create_time FROM [%s]%s",
 					tableName, tw))
@@ -1424,17 +1652,17 @@ func (s *ContactService) GetSocialBreadth() []SocialBreadthPoint {
 
 // SelfPortrait 个人自画像统计
 type SelfPortrait struct {
-	TotalSent         int64              `json:"total_sent"`            // 我发出的消息总数
-	TotalChars        int64              `json:"total_chars"`           // 我发出的总字数
-	AvgMsgLen         float64            `json:"avg_msg_len"`           // 平均消息长度
-	HourlyDist        [24]int            `json:"hourly_dist"`           // 我的小时分布
-	WeeklyDist        [7]int             `json:"weekly_dist"`           // 我的周分布
-	InitiationCount   int64              `json:"initiation_count"`      // 主动发起次数
-	TotalContacts     int                `json:"total_contacts"`        // 我主动发过消息的人数
-	TopActiveHour     int                `json:"top_active_hour"`       // 最活跃的小时
-	TopActiveWeekday  int                `json:"top_active_weekday"`    // 最活跃的星期
-	MostContactedName string             `json:"most_contacted_name"`   // 最常联系的人
-	MostContactedCount int64             `json:"most_contacted_count"`
+	TotalSent          int64   `json:"total_sent"`          // 我发出的消息总数
+	TotalChars         int64   `json:"total_chars"`         // 我发出的总字数
+	AvgMsgLen          float64 `json:"avg_msg_len"`         // 平均消息长度
+	HourlyDist         [24]int `json:"hourly_dist"`         // 我的小时分布
+	WeeklyDist         [7]int  `json:"weekly_dist"`         // 我的周分布
+	InitiationCount    int64   `json:"initiation_count"`    // 主动发起次数
+	TotalContacts      int     `json:"total_contacts"`      // 我主动发过消息的人数
+	TopActiveHour      int     `json:"top_active_hour"`     // 最活跃的小时
+	TopActiveWeekday   int     `json:"top_active_weekday"`  // 最活跃的星期
+	MostContactedName  string  `json:"most_contacted_name"` // 最常联系的人
+	MostContactedCount int64   `json:"most_contacted_count"`
 }
 
 // GetSelfPortrait 聚合"我"方向的消息数据，生成个人自画像
@@ -1480,7 +1708,7 @@ func (s *ContactService) GetSelfPortrait() *SelfPortrait {
 			hourly := [24]int{}
 			weekly := [7]int{}
 
-			for _, mdb := range s.dbMgr.MessageDBs {
+			for _, mdb := range s.msgRepo.DBsForUsername(c.Username) {
 				var contactRowID int64 = -1
 				mdb.QueryRow(fmt.Sprintf("SELECT rowid FROM Name2Id WHERE user_name = %q", c.Username)).Scan(&contactRowID)
 
@@ -1576,11 +1804,11 @@ func (s *ContactService) GetSelfPortrait() *SelfPortrait {
 
 // ChatMessage 单条聊天消息（用于日历点击查看当天记录）
 type ChatMessage struct {
-	Time    string `json:"time"`              // "14:23"
-	Content string `json:"content"`           // 消息内容或类型描述
-	IsMine  bool   `json:"is_mine"`           // true=我发的
-	Type    int    `json:"type"`              // local_type
-	Date    string `json:"date,omitempty"`    // "2024-03-15"，搜索结果中使用
+	Time    string `json:"time"`           // "14:23"
+	Content string `json:"content"`        // 消息内容或类型描述
+	IsMine  bool   `json:"is_mine"`        // true=我发的
+	Type    int    `json:"type"`           // local_type
+	Date    string `json:"date,omitempty"` // "2024-03-15"，搜索结果中使用
 }
 
 // GetDayMessages 返回指定联系人某一天的聊天记录（按时间排序）
@@ -1596,7 +1824,7 @@ func (s *ContactService) GetDayMessages(username, date string) []ChatMessage {
 	dayEnd := dayStart + 86400
 
 	var msgs []ChatMessage
-	for _, mdb := range s.dbMgr.MessageDBs {
+	for _, mdb := range s.msgRepo.DBsForUsername(username) {
 		// 每个 DB 单独查联系人 rowid（不同 DB 里 rowid 不同）
 		var contactRowID int64 = -1
 		mdb.QueryRow(fmt.Sprintf("SELECT rowid FROM Name2Id WHERE user_name = %q", username)).Scan(&contactRowID)
@@ -1683,7 +1911,7 @@ func (s *ContactService) GetMonthMessages(username, month string, includeMine bo
 	monthEnd := nextMonth.Unix()
 
 	var msgs []ChatMessage
-	for _, mdb := range s.dbMgr.MessageDBs {
+	for _, mdb := range s.msgRepo.DBsForUsername(username) {
 		var contactRowID int64 = -1
 		mdb.QueryRow(fmt.Sprintf("SELECT rowid FROM Name2Id WHERE user_name = %q", username)).Scan(&contactRowID)
 
@@ -1738,7 +1966,7 @@ func (s *ContactService) SearchMessages(username, query string, includeMine bool
 	tw := s.timeWhere()
 
 	var msgs []ChatMessage
-	for _, mdb := range s.dbMgr.MessageDBs {
+	for _, mdb := range s.msgRepo.DBsForUsername(username) {
 		var contactRowID int64 = -1
 		mdb.QueryRow(fmt.Sprintf("SELECT rowid FROM Name2Id WHERE user_name = %q", username)).Scan(&contactRowID)
 
@@ -1836,7 +2064,7 @@ func (s *ContactService) exportContactMessages(username string, from, to int64, 
 	tw := exportTimeWhere(from, to, s.timeWhere())
 
 	var msgs []ChatMessage
-	for _, mdb := range s.dbMgr.MessageDBs {
+	for _, mdb := range s.msgRepo.DBsForUsername(username) {
 		var contactRowID int64 = -1
 		mdb.QueryRow(fmt.Sprintf("SELECT rowid FROM Name2Id WHERE user_name = %q", username)).Scan(&contactRowID)
 
@@ -1929,7 +2157,7 @@ func (s *ContactService) exportGroupMessages(username string, from, to int64, li
 	avatarMap := s.loadContactAvatarMap()
 	var msgs []GroupChatMessage
 
-	for _, mdb := range s.dbMgr.MessageDBs {
+	for _, mdb := range s.msgRepo.DBsForUsername(username) {
 		id2name := make(map[int64]string)
 		n2iRows, err2 := mdb.Query("SELECT rowid, user_name FROM Name2Id")
 		if err2 == nil {
@@ -2040,7 +2268,7 @@ func (s *ContactService) ExtractContactGroupMessages(contactUsername string, gro
 
 		// 收集该群中联系人的全部发言
 		var groupItems []timedText
-		for _, mdb := range s.dbMgr.MessageDBs {
+		for _, mdb := range s.msgRepo.DBsForUsername(groupUname) {
 			var contactRowID int64 = -1
 			mdb.QueryRow("SELECT rowid FROM Name2Id WHERE user_name = ?", contactUsername).Scan(&contactRowID)
 			if contactRowID < 0 {
@@ -2102,8 +2330,35 @@ func (s *ContactService) GetWordCloud(username string, includeMine bool) []WordC
 		s.contactAnalysisMu.RUnlock()
 		return cached
 	}
+	generation := s.contactAnalysisGeneration
 	s.contactAnalysisMu.RUnlock()
 
+	value, _, _ := s.contactAnalysisFlights.Do(
+		fmt.Sprintf("wordcloud:%d:%s", generation, cacheKey),
+		func() (interface{}, error) {
+			s.contactAnalysisMu.RLock()
+			if cached, ok := s.wordCloudCache[cacheKey]; ok {
+				s.contactAnalysisMu.RUnlock()
+				return cached, nil
+			}
+			s.contactAnalysisMu.RUnlock()
+
+			list := s.computeWordCloud(username, includeMine)
+			s.contactAnalysisMu.Lock()
+			if s.contactAnalysisGeneration == generation {
+				if s.wordCloudCache == nil {
+					s.wordCloudCache = make(map[string][]WordCount)
+				}
+				storeBounded(s.wordCloudCache, &s.wordCloudCacheOrder, cacheKey, list, contactAnalysisCacheLimit)
+			}
+			s.contactAnalysisMu.Unlock()
+			return list, nil
+		},
+	)
+	return value.([]WordCount)
+}
+
+func (s *ContactService) computeWordCloud(username string, includeMine bool) []WordCount {
 	tableName := db.GetTableName(username)
 	// 先收集文本，关闭 DB 连接后再分词
 	twCloud := s.timeWhere()
@@ -2121,13 +2376,17 @@ func (s *ContactService) GetWordCloud(username string, includeMine bool) []WordC
 			"SELECT message_content, COALESCE(WCDB_CT_message_content,0) FROM [%s]%s ORDER BY create_time DESC LIMIT %d",
 			tableName, twCloud, wordCloudMaxMessages,
 		))
-		if err != nil { continue }
+		if err != nil {
+			continue
+		}
 		for rows.Next() {
 			var rawContent []byte
 			var ct int64
 			rows.Scan(&rawContent, &ct)
 			content := decodeGroupContent(rawContent, ct)
-			if content == "" || s.isSys(content) { continue }
+			if content == "" || s.isSys(content) {
+				continue
+			}
 			content = wechatEmojiRe.ReplaceAllString(content, "")
 			texts = append(texts, content)
 		}
@@ -2138,11 +2397,17 @@ func (s *ContactService) GetWordCloud(username string, includeMine bool) []WordC
 	for _, content := range texts {
 		for _, seg := range s.segmenter.Cut(content, true) {
 			seg = strings.TrimSpace(seg)
-			if !utf8.ValidString(seg) { continue }
+			if !utf8.ValidString(seg) {
+				continue
+			}
 			runes := []rune(seg)
 			// 长度：至少 2 个字符，不超过 8 个（过滤长句残片）
-			if len(runes) < 2 || len(runes) > 8 { continue }
-			if isNumeric(seg) || STOP_WORDS[seg] || containsEmoji(seg) || !hasWordChar(seg) { continue }
+			if len(runes) < 2 || len(runes) > 8 {
+				continue
+			}
+			if isNumeric(seg) || STOP_WORDS[seg] || containsEmoji(seg) || !hasWordChar(seg) {
+				continue
+			}
 			wordCounts[seg]++
 		}
 	}
@@ -2161,17 +2426,21 @@ func (s *ContactService) GetWordCloud(username string, includeMine bool) []WordC
 		}
 	}
 	sort.Slice(list, func(i, j int) bool { return list[i].Count > list[j].Count })
-	if len(list) > 120 { list = list[:120] }
-	if list == nil { list = []WordCount{} }
-	s.contactAnalysisMu.Lock()
-	if s.wordCloudCache == nil { s.wordCloudCache = make(map[string][]WordCount) }
-	s.wordCloudCache[cacheKey] = list
-	s.contactAnalysisMu.Unlock()
+	if len(list) > 120 {
+		list = list[:120]
+	}
+	if list == nil {
+		list = []WordCount{}
+	}
 	return list
 }
 
 func (s *ContactService) isSys(c string) bool {
-	for _, k := range SYSTEM_KEYS { if strings.Contains(c, k) { return true } }
+	for _, k := range SYSTEM_KEYS {
+		if strings.Contains(c, k) {
+			return true
+		}
+	}
 	return false
 }
 
@@ -2186,17 +2455,17 @@ func (s *ContactService) isSys(c string) bool {
 
 // SecretWord 一个"秘语"词条
 type SecretWord struct {
-	Word    string  `json:"word"`
-	Count   int     `json:"count"`   // tf
-	DF      int     `json:"df"`      // 多少个活跃联系人的词云里也有
-	Score   float64 `json:"score"`   // TF-IDF 分
+	Word  string  `json:"word"`
+	Count int     `json:"count"` // tf
+	DF    int     `json:"df"`    // 多少个活跃联系人的词云里也有
+	Score float64 `json:"score"` // TF-IDF 分
 }
 
 // secretWordsDocFreq 全局文档频率缓存；1 小时刷一次。
 // 第一次调用会同步扫描 Top 50 活跃联系人的词云（可能需要几秒到几十秒），后续命中走缓存。
 type secretWordsDF struct {
-	df     map[string]int
-	docN   int // 参与统计的联系人数 N
+	df      map[string]int
+	docN    int // 参与统计的联系人数 N
 	builtAt time.Time
 }
 
@@ -2286,14 +2555,14 @@ func (s *ContactService) GetSecretWords(username string, topN int) []SecretWord 
 
 // SimilarityPair 两个联系人之间的相似度
 type SimilarityPair struct {
-	User1       string  `json:"user1"`
-	Name1       string  `json:"name1"`
-	Avatar1     string  `json:"avatar1"`
-	User2       string  `json:"user2"`
-	Name2       string  `json:"name2"`
-	Avatar2     string  `json:"avatar2"`
-	Score       float64 `json:"score"`       // 0~1
-	TopShared   []string `json:"top_shared"` // 共同高频词 Top5
+	User1     string   `json:"user1"`
+	Name1     string   `json:"name1"`
+	Avatar1   string   `json:"avatar1"`
+	User2     string   `json:"user2"`
+	Name2     string   `json:"name2"`
+	Avatar2   string   `json:"avatar2"`
+	Score     float64  `json:"score"`      // 0~1
+	TopShared []string `json:"top_shared"` // 共同高频词 Top5
 }
 
 // SimilarityResult 完整结果
@@ -2338,7 +2607,7 @@ func (s *ContactService) GetContactSimilarity(topN int) *SimilarityResult {
 
 	// 构建特征向量
 	type featureVec struct {
-		vec  []float64
+		vec   []float64
 		words map[string]int // 高频词（用于计算共同词）
 	}
 	features := make([]featureVec, len(candidates))
@@ -2427,9 +2696,13 @@ func (s *ContactService) GetContactSimilarity(topN int) *SimilarityResult {
 	for _, p := range pairs {
 		c1, c2 := candidates[p.i], candidates[p.j]
 		name1 := c1.Remark
-		if name1 == "" { name1 = c1.Nickname }
+		if name1 == "" {
+			name1 = c1.Nickname
+		}
 		name2 := c2.Remark
-		if name2 == "" { name2 = c2.Nickname }
+		if name2 == "" {
+			name2 = c2.Nickname
+		}
 
 		// 共同高频词 Top5
 		var shared []string
@@ -2453,7 +2726,7 @@ func (s *ContactService) GetContactSimilarity(topN int) *SimilarityResult {
 		result = append(result, SimilarityPair{
 			User1: c1.Username, Name1: name1, Avatar1: c1.SmallHeadURL,
 			User2: c2.Username, Name2: name2, Avatar2: c2.SmallHeadURL,
-			Score: math.Round(p.score*1000) / 1000,
+			Score:     math.Round(p.score*1000) / 1000,
 			TopShared: shared,
 		})
 	}
@@ -2485,24 +2758,24 @@ func cosineSimFloat64(a, b []float64) float64 {
 
 // MoneyContactStat 单个联系人的红包转账统计
 type MoneyContactStat struct {
-	Username     string `json:"username"`
-	Name         string `json:"name"`
-	Avatar       string `json:"avatar"`
-	SentRedPacket   int `json:"sent_red_packet"`   // 我发出红包
-	RecvRedPacket   int `json:"recv_red_packet"`   // 我收到红包
-	SentTransfer    int `json:"sent_transfer"`     // 我发出转账
-	RecvTransfer    int `json:"recv_transfer"`     // 我收到转账
-	Total           int `json:"total"`
+	Username      string `json:"username"`
+	Name          string `json:"name"`
+	Avatar        string `json:"avatar"`
+	SentRedPacket int    `json:"sent_red_packet"` // 我发出红包
+	RecvRedPacket int    `json:"recv_red_packet"` // 我收到红包
+	SentTransfer  int    `json:"sent_transfer"`   // 我发出转账
+	RecvTransfer  int    `json:"recv_transfer"`   // 我收到转账
+	Total         int    `json:"total"`
 }
 
 // MoneyOverview 全局红包转账总览
 type MoneyOverview struct {
-	TotalRedPacket    int                `json:"total_red_packet"`
-	TotalTransfer     int                `json:"total_transfer"`
-	TotalSent         int                `json:"total_sent"`         // 我发出的总数
-	TotalRecv         int                `json:"total_recv"`         // 我收到的总数
-	MonthlyTrend      map[string][2]int  `json:"monthly_trend"`     // "2024-01" → [sent, recv]
-	Contacts          []MoneyContactStat `json:"contacts"`          // 按 total 排序
+	TotalRedPacket int                `json:"total_red_packet"`
+	TotalTransfer  int                `json:"total_transfer"`
+	TotalSent      int                `json:"total_sent"`    // 我发出的总数
+	TotalRecv      int                `json:"total_recv"`    // 我收到的总数
+	MonthlyTrend   map[string][2]int  `json:"monthly_trend"` // "2024-01" → [sent, recv]
+	Contacts       []MoneyContactStat `json:"contacts"`      // 按 total 排序
 }
 
 // GetMoneyOverview 遍历有红包/转账记录的联系人，聚合全局统计
@@ -2551,7 +2824,7 @@ func (s *ContactService) GetMoneyOverview() *MoneyOverview {
 			var sentRP, recvRP, sentTF, recvTF int
 			monthly := make(map[string][2]int)
 
-			for _, mdb := range s.dbMgr.MessageDBs {
+			for _, mdb := range s.msgRepo.DBsForUsername(c.Username) {
 				var contactRowID int64 = -1
 				mdb.QueryRow(fmt.Sprintf("SELECT rowid FROM Name2Id WHERE user_name = %q", c.Username)).Scan(&contactRowID)
 
@@ -2641,13 +2914,18 @@ func (s *ContactService) GetMoneyOverview() *MoneyOverview {
 }
 
 func (s *ContactService) GetCachedStats() []ContactStatsExtended {
-	s.cacheMu.RLock(); defer s.cacheMu.RUnlock()
-	if s.cache == nil { return []ContactStatsExtended{} }
+	s.cacheMu.RLock()
+	defer s.cacheMu.RUnlock()
+	if s.cache == nil {
+		return []ContactStatsExtended{}
+	}
 	return s.cache
 }
 
 func (s *ContactService) GetGlobal() GlobalStats {
-	s.cacheMu.RLock(); defer s.cacheMu.RUnlock(); return s.global
+	s.cacheMu.RLock()
+	defer s.cacheMu.RUnlock()
+	return s.global
 }
 
 // Location 返回当前生效的时区。给 service 外部按"Date+Time 字符串重建 unix 秒"
@@ -2717,19 +2995,27 @@ func (s *ContactService) CancelIndexing() bool {
 }
 
 func (s *ContactService) formatTime(ts int64) string {
-	if ts <= 0 || ts > 2000000000 { return "-" }
+	if ts <= 0 || ts > 2000000000 {
+		return "-"
+	}
 	return time.Unix(ts, 0).In(s.tz).Format("2006-01-02")
 }
 
 func isNumeric(s string) bool {
-	for _, r := range s { if (r < '0' || r > '9') && r != '.' { return false } }
+	for _, r := range s {
+		if (r < '0' || r > '9') && r != '.' {
+			return false
+		}
+	}
 	return true
 }
 
 // hasWordChar 判断是否包含至少一个汉字或英文字母，过滤纯标点/符号词
 func hasWordChar(s string) bool {
 	for _, r := range s {
-		if unicode.IsLetter(r) { return true }
+		if unicode.IsLetter(r) {
+			return true
+		}
 	}
 	return false
 }
@@ -2738,11 +3024,11 @@ func hasWordChar(s string) bool {
 // ─── 群聊画像 ────────────────────────────────────────────────────────────────
 
 type GroupInfo struct {
-	Username      string `json:"username"`
-	Name          string `json:"name"`       // 群名（remark 或 nickname）
-	SmallHeadURL  string `json:"small_head_url"`
-	TotalMessages int64  `json:"total_messages"`
-	MemberCount   int    `json:"member_count"`
+	Username       string `json:"username"`
+	Name           string `json:"name"` // 群名（remark 或 nickname）
+	SmallHeadURL   string `json:"small_head_url"`
+	TotalMessages  int64  `json:"total_messages"`
+	MemberCount    int    `json:"member_count"`
 	FirstMessage   string `json:"first_message_time"`
 	LastMessage    string `json:"last_message_time"`
 	FirstMessageTs int64  `json:"first_message_ts,omitempty"`
@@ -2770,13 +3056,13 @@ type MemberStat struct {
 }
 
 type GroupDetail struct {
-	HourlyDist   [24]int           `json:"hourly_dist"`
-	WeeklyDist   [7]int            `json:"weekly_dist"`
-	DailyHeatmap map[string]int    `json:"daily_heatmap"`
-	MemberRank   []MemberStat      `json:"member_rank"`  // top 500 发言者
-	TopWords     []WordCount       `json:"top_words"`    // top 30 高频词
-	TypeDist     map[string]int    `json:"type_dist"`    // 消息类型分布（条数）
-	MyCPs        []MyCPEntry       `json:"my_cps"`       // 群内跟我引用互动最多的成员 Top 3
+	HourlyDist   [24]int        `json:"hourly_dist"`
+	WeeklyDist   [7]int         `json:"weekly_dist"`
+	DailyHeatmap map[string]int `json:"daily_heatmap"`
+	MemberRank   []MemberStat   `json:"member_rank"` // top 500 发言者
+	TopWords     []WordCount    `json:"top_words"`   // top 30 高频词
+	TypeDist     map[string]int `json:"type_dist"`   // 消息类型分布（条数）
+	MyCPs        []MyCPEntry    `json:"my_cps"`      // 群内跟我引用互动最多的成员 Top 3
 
 	// 7×24 二维热图（星期×小时），用于时钟指纹；比独立 hourly+weekly 更精准
 	// weeklyHourlyDist[weekday][hour]，weekday 0=周日
@@ -2784,8 +3070,8 @@ type GroupDetail struct {
 
 	// 群影响力指数：我发言后 30 分钟内有人回应的次数 / 我发言次数
 	// GroupReplyRate 是群的基线（任意成员发言后 30 分钟内有人接的比例）
-	MyInfluenceScore  int     `json:"my_influence_score"`   // 0-100，-1=样本不足
-	MyReplyRate       float64 `json:"my_reply_rate"`        // 我发言后 30 分钟内有回应的比例 0-1
+	MyInfluenceScore   int     `json:"my_influence_score"`    // 0-100，-1=样本不足
+	MyReplyRate        float64 `json:"my_reply_rate"`         // 我发言后 30 分钟内有回应的比例 0-1
 	GroupBaseReplyRate float64 `json:"group_base_reply_rate"` // 群整体基线 0-1
 }
 
@@ -2830,7 +3116,9 @@ func (s *ContactService) GetGroups() []GroupInfo {
 func (s *ContactService) loadGroups() []GroupInfo {
 	rows, err := s.dbMgr.ContactDB.Query(
 		`SELECT username, nick_name, remark, COALESCE(small_head_url,'') FROM contact WHERE username LIKE '%@chatroom'`)
-	if err != nil { return nil }
+	if err != nil {
+		return nil
+	}
 	defer rows.Close()
 
 	type raw struct{ uname, nick, remark, avatar string }
@@ -2855,7 +3143,9 @@ func (s *ContactService) loadGroups() []GroupInfo {
 	for _, g := range groups {
 		wg.Add(1)
 		go func(g raw) {
-			defer wg.Done(); sem <- struct{}{}; defer func() { <-sem }()
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
 			tableName := db.GetTableName(g.uname)
 			var total int64
 			var firstTs int64 = 9999999999
@@ -2872,8 +3162,12 @@ func (s *ContactService) loadGroups() []GroupInfo {
 				var cnt, minTs, maxTs int64
 				if err := mdb.QueryRow(countQuery).Scan(&cnt, &minTs, &maxTs); err == nil {
 					total += cnt
-					if minTs > 0 && minTs < firstTs { firstTs = minTs }
-					if maxTs > lastTs { lastTs = maxTs }
+					if minTs > 0 && minTs < firstTs {
+						firstTs = minTs
+					}
+					if maxTs > lastTs {
+						lastTs = maxTs
+					}
 				}
 				// 三个标量子查询都能使用 create_time 索引，不再对整张群表做 SUM/GROUP BY。
 				var v30, v3m, vp3m int64
@@ -2884,11 +3178,17 @@ func (s *ContactService) loadGroups() []GroupInfo {
 					tableName, cutoff30, tableName, cutoff3m, tableName, cutoff6m, cutoff3m,
 				)
 				if err := mdb.QueryRow(trendQuery).Scan(&v30, &v3m, &vp3m); err == nil {
-					r30 += v30; r3m += v3m; p3m += vp3m
+					r30 += v30
+					r3m += v3m
+					p3m += vp3m
 				}
 			}
-			if total == 0 { return }
-			if firstTs == 9999999999 { firstTs = 0 }
+			if total == 0 {
+				return
+			}
+			if firstTs == 9999999999 {
+				firstTs = 0
+			}
 			// 尝试从 chatroom_member 表获取真实群成员总数
 			realMemberCount := 0
 			s.dbMgr.ContactDB.QueryRow(
@@ -2905,15 +3205,21 @@ func (s *ContactService) loadGroups() []GroupInfo {
 				trendPct = 999
 			}
 
-			name := g.remark; if name == "" { name = g.nick }; if name == "" { name = g.uname }
+			name := g.remark
+			if name == "" {
+				name = g.nick
+			}
+			if name == "" {
+				name = g.uname
+			}
 			mu.Lock()
 			result = append(result, GroupInfo{
 				Username: g.uname, Name: name, SmallHeadURL: g.avatar,
 				TotalMessages: total, MemberCount: realMemberCount,
 				FirstMessage: s.formatTime(firstTs), LastMessage: s.formatTime(lastTs),
 				FirstMessageTs: firstTs, LastMessageTs: lastTs,
-				Recent30Days:    r30,
-				RecentTrendPct:  trendPct,
+				Recent30Days:   r30,
+				RecentTrendPct: trendPct,
 			})
 			mu.Unlock()
 		}(g)
@@ -2927,14 +3233,20 @@ func (s *ContactService) loadGroups() []GroupInfo {
 func (s *ContactService) loadContactNameMap() map[string]string {
 	nameMap := make(map[string]string)
 	rows, err := s.dbMgr.ContactDB.Query("SELECT username, COALESCE(remark,''), COALESCE(nick_name,'') FROM contact")
-	if err != nil { return nameMap }
+	if err != nil {
+		return nameMap
+	}
 	defer rows.Close()
 	for rows.Next() {
 		var uname, remark, nick string
 		rows.Scan(&uname, &remark, &nick)
 		name := remark
-		if name == "" { name = nick }
-		if name == "" { name = uname }
+		if name == "" {
+			name = nick
+		}
+		if name == "" {
+			name = uname
+		}
 		nameMap[uname] = name
 	}
 	return nameMap
@@ -2965,7 +3277,7 @@ func (s *ContactService) GetSelfInfo() *SelfInfo {
 	}
 
 	tableName := db.GetTableName(sampleUsername)
-	for _, mdb := range s.dbMgr.MessageDBs {
+	for _, mdb := range s.msgRepo.DBsForUsername(sampleUsername) {
 		id2wxid := make(map[int64]string)
 		rows, err := mdb.Query("SELECT rowid, user_name FROM Name2Id")
 		if err != nil {
@@ -3080,7 +3392,9 @@ func (s *ContactService) loadGroupAllMembers(groupUsername string, nameMap map[s
 		var uname, remark, nick string
 		rows.Scan(&uname, &remark, &nick)
 		name := remark
-		if name == "" { name = nick }
+		if name == "" {
+			name = nick
+		}
 		if name == "" {
 			if n, ok := nameMap[uname]; ok && n != "" {
 				name = n
@@ -3099,7 +3413,9 @@ func decodeGroupContent(raw []byte, ct int64) string {
 		dec := zstdDecoderPool.Get().(*zstd.Decoder)
 		result, err := dec.DecodeAll(raw, nil)
 		zstdDecoderPool.Put(dec)
-		if err != nil { return "" }
+		if err != nil {
+			return ""
+		}
 		return string(result)
 	}
 	return string(raw)
@@ -3128,21 +3444,35 @@ func (s *ContactService) GetGroupDetail(username string) *GroupDetail {
 		return nil
 	}
 	s.groupDetailComputing[username] = true
+	generation := s.groupAnalysisGeneration
 	s.groupDetailMu.Unlock()
 
-	go s.computeGroupDetail(username)
+	go s.computeGroupDetail(username, generation)
 	return nil
 }
 
-func (s *ContactService) computeGroupDetail(username string) {
+func (s *ContactService) computeGroupDetail(username string, generation uint64) {
 	tableName := db.GetTableName(username)
 	detail := &GroupDetail{DailyHeatmap: make(map[string]int), TypeDist: make(map[string]int), MemberRank: []MemberStat{}, TopWords: []WordCount{}}
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("[GROUPDETAIL] %s panic: %v\n%s", username, r, debug.Stack())
+		}
+		s.groupDetailMu.Lock()
+		if s.groupAnalysisGeneration == generation {
+			if _, ok := s.groupDetailCache[username]; !ok {
+				storeBounded(s.groupDetailCache, &s.groupDetailCacheOrder, username, detail, groupAnalysisCacheLimit)
+			}
+			delete(s.groupDetailComputing, username)
+		}
+		s.groupDetailMu.Unlock()
+	}()
 	// 用 wxid 作为 key，避免显示名重复导致的合并
-	memberMap := make(map[string]int64)      // wxid → 发言数（全类型）
-	memberTextMap := make(map[string]int64)  // wxid → 文本消息数（Type==1），Skill 炼化真正能用的量
-	memberLastTs := make(map[string]int64)   // wxid → 最后发言 Unix 时间戳
-	memberFirstTs := make(map[string]int64)  // wxid → 首次发言 Unix 时间戳
-	memberNames := make(map[string]string)   // wxid → 显示名
+	memberMap := make(map[string]int64)     // wxid → 发言数（全类型）
+	memberTextMap := make(map[string]int64) // wxid → 文本消息数（Type==1），Skill 炼化真正能用的量
+	memberLastTs := make(map[string]int64)  // wxid → 最后发言 Unix 时间戳
+	memberFirstTs := make(map[string]int64) // wxid → 首次发言 Unix 时间戳
+	memberNames := make(map[string]string)  // wxid → 显示名
 	wordCounts := make(map[string]int)
 
 	nameMap := s.loadContactNameMap()
@@ -3167,12 +3497,13 @@ func (s *ContactService) computeGroupDetail(username string) {
 	var textSamples []string
 	// Pass 1: 全量扫描时间分布 + 发言人统计 + 词云文本收集（合并为一次扫描）
 	// 用 real_sender_id（rowid）→ Name2Id → wxid → nameMap 解析所有人（含本人）
-	for _, mdb := range s.dbMgr.MessageDBs {
+	for _, mdb := range s.msgRepo.DBsForUsername(username) {
 		// 加载本 DB 的 Name2Id：rowid → wxid
 		idToWxid := make(map[int64]string)
 		if nrows, nerr := mdb.Query("SELECT rowid, user_name FROM Name2Id"); nerr == nil {
 			for nrows.Next() {
-				var rid int64; var uname string
+				var rid int64
+				var uname string
 				nrows.Scan(&rid, &uname)
 				idToWxid[rid] = uname
 			}
@@ -3181,11 +3512,14 @@ func (s *ContactService) computeGroupDetail(username string) {
 
 		rows, err := mdb.Query(fmt.Sprintf(
 			"SELECT create_time, real_sender_id, local_type, message_content, COALESCE(WCDB_CT_message_content,0) FROM [%s]%s", tableName, twDetail))
-		if err != nil { continue }
+		if err != nil {
+			continue
+		}
 		for rows.Next() {
 			var ts, senderID int64
 			var lt int
-			var rawContent []byte; var ct int64
+			var rawContent []byte
+			var ct int64
 			rows.Scan(&ts, &senderID, &lt, &rawContent, &ct)
 			content := decodeGroupContent(rawContent, ct)
 			dt := time.Unix(ts, 0).In(s.tz)
@@ -3194,17 +3528,25 @@ func (s *ContactService) computeGroupDetail(username string) {
 			detail.WeeklyHourlyDist[int(dt.Weekday())][dt.Hour()]++
 			detail.DailyHeatmap[dt.Format("2006-01-02")]++
 			typeName := classifyMsgType(lt, content)
-			if typeName != "系统" { detail.TypeDist[typeName]++ }
+			if typeName != "系统" {
+				detail.TypeDist[typeName]++
+			}
 			if wxid, ok := idToWxid[senderID]; ok && wxid != "" {
 				memberMap[wxid]++
 				if (lt & 0xFFFF) == 1 {
 					memberTextMap[wxid]++
 				}
-				if ts > memberLastTs[wxid] { memberLastTs[wxid] = ts }
-				if cur, ok2 := memberFirstTs[wxid]; !ok2 || ts < cur { memberFirstTs[wxid] = ts }
+				if ts > memberLastTs[wxid] {
+					memberLastTs[wxid] = ts
+				}
+				if cur, ok2 := memberFirstTs[wxid]; !ok2 || ts < cur {
+					memberFirstTs[wxid] = ts
+				}
 				if _, ok2 := memberNames[wxid]; !ok2 {
 					name := wxid
-					if n, ok3 := nameMap[wxid]; ok3 && n != "" { name = n }
+					if n, ok3 := nameMap[wxid]; ok3 && n != "" {
+						name = n
+					}
 					memberNames[wxid] = name
 				}
 				// 影响力：收集时间 + 发言者，扫完后算
@@ -3251,15 +3593,23 @@ func (s *ContactService) computeGroupDetail(username string) {
 	const segBatch = 500
 	for i := 0; i < len(textSamples); i += segBatch {
 		end := i + segBatch
-		if end > len(textSamples) { end = len(textSamples) }
+		if end > len(textSamples) {
+			end = len(textSamples)
+		}
 		s.segmenterMu.Lock()
 		for _, text := range textSamples[i:end] {
 			for _, seg := range s.segmenter.Cut(text, true) {
 				seg = strings.TrimSpace(seg)
-				if !utf8.ValidString(seg) { continue }
+				if !utf8.ValidString(seg) {
+					continue
+				}
 				runes := []rune(seg)
-				if len(runes) < 2 || len(runes) > 8 { continue }
-				if isNumeric(seg) || STOP_WORDS[seg] || containsEmoji(seg) || !hasWordChar(seg) { continue }
+				if len(runes) < 2 || len(runes) > 8 {
+					continue
+				}
+				if isNumeric(seg) || STOP_WORDS[seg] || containsEmoji(seg) || !hasWordChar(seg) {
+					continue
+				}
 				wordCounts[seg]++
 			}
 		}
@@ -3308,10 +3658,14 @@ func (s *ContactService) computeGroupDetail(username string) {
 
 	// 高频词 top 30
 	for w, c := range wordCounts {
-		if utf8.ValidString(w) { detail.TopWords = append(detail.TopWords, WordCount{w, c}) }
+		if utf8.ValidString(w) {
+			detail.TopWords = append(detail.TopWords, WordCount{w, c})
+		}
 	}
 	sort.Slice(detail.TopWords, func(i, j int) bool { return detail.TopWords[i].Count > detail.TopWords[j].Count })
-	if len(detail.TopWords) > 30 { detail.TopWords = detail.TopWords[:30] }
+	if len(detail.TopWords) > 30 {
+		detail.TopWords = detail.TopWords[:30]
+	}
 
 	// 影响力指数：发言后 30 分钟内有别人回应的比例
 	detail.MyInfluenceScore = -1
@@ -3399,20 +3753,22 @@ func (s *ContactService) computeGroupDetail(username string) {
 
 	// 写入缓存，清除 computing 标记
 	s.groupDetailMu.Lock()
-	s.groupDetailCache[username] = detail
-	delete(s.groupDetailComputing, username)
+	if s.groupAnalysisGeneration == generation {
+		storeBounded(s.groupDetailCache, &s.groupDetailCacheOrder, username, detail, groupAnalysisCacheLimit)
+		delete(s.groupDetailComputing, username)
+	}
 	s.groupDetailMu.Unlock()
 }
 
 // GroupChatMessage 群聊单条消息（含发言者显示名）
 type GroupChatMessage struct {
-	Time      string `json:"time"`                  // "HH:MM"
-	Speaker   string `json:"speaker"`               // 发言者显示名
-	Content   string `json:"content"`               // 消息内容
-	IsMine    bool   `json:"is_mine"`               // 是否是我发的
-	Type      int    `json:"type"`                  // local_type
-	Date      string `json:"date,omitempty"`        // "2024-03-15"，搜索结果中使用
-	AvatarURL string `json:"avatar_url,omitempty"`  // 发言者头像 URL（有联系人记录时返回）
+	Time      string `json:"time"`                 // "HH:MM"
+	Speaker   string `json:"speaker"`              // 发言者显示名
+	Content   string `json:"content"`              // 消息内容
+	IsMine    bool   `json:"is_mine"`              // 是否是我发的
+	Type      int    `json:"type"`                 // local_type
+	Date      string `json:"date,omitempty"`       // "2024-03-15"，搜索结果中使用
+	AvatarURL string `json:"avatar_url,omitempty"` // 发言者头像 URL（有联系人记录时返回）
 }
 
 // GetGroupDayMessages 返回群聊某一天的聊天记录
@@ -3430,7 +3786,7 @@ func (s *ContactService) GetGroupDayMessages(username, date string) []GroupChatM
 	avatarMap := s.loadContactAvatarMap()
 
 	var msgs []GroupChatMessage
-	for _, mdb := range s.dbMgr.MessageDBs {
+	for _, mdb := range s.msgRepo.DBsForUsername(username) {
 		// 加载本 DB 的 Name2Id 映射：rowid → wxid
 		id2name := make(map[int64]string)
 		n2iRows, err2 := mdb.Query("SELECT rowid, user_name FROM Name2Id")
@@ -3564,7 +3920,7 @@ func (s *ContactService) SearchGroupMessages(username, query, speaker string) []
 	lowerQuery := strings.ToLower(query)
 	var msgs []GroupChatMessage
 
-	for _, mdb := range s.dbMgr.MessageDBs {
+	for _, mdb := range s.msgRepo.DBsForUsername(username) {
 		id2name := make(map[int64]string)
 		n2iRows, err2 := mdb.Query("SELECT rowid, user_name FROM Name2Id")
 		if err2 == nil {
@@ -3666,7 +4022,7 @@ func (s *ContactService) buildGroupHourlyHeatmap() [24]int {
 	twFilter := s.timeWhere()
 	for _, groupUname := range groupUsernames {
 		tableName := db.GetTableName(groupUname)
-		for _, mdb := range s.dbMgr.MessageDBs {
+		for _, mdb := range s.msgRepo.DBsForUsername(groupUname) {
 			var query string
 			if twFilter == "" {
 				query = fmt.Sprintf("SELECT create_time FROM [%s]", tableName)
@@ -3708,7 +4064,7 @@ func (s *ContactService) buildGroupMonthlyTrend() map[string]int {
 	twFilter := s.timeWhere()
 	for _, groupUname := range groupUsernames {
 		tableName := db.GetTableName(groupUname)
-		for _, mdb := range s.dbMgr.MessageDBs {
+		for _, mdb := range s.msgRepo.DBsForUsername(groupUname) {
 			var query string
 			if twFilter == "" {
 				query = fmt.Sprintf("SELECT create_time FROM [%s]", tableName)
@@ -3812,18 +4168,18 @@ type CommonCircleGroup struct {
 
 // CommonFriend 推测的共同好友（出现在多个共同群中）
 type CommonFriend struct {
-	Name          string `json:"name"`
-	Username      string `json:"username"` // wxid，可能为空
-	Avatar        string `json:"avatar,omitempty"`
-	IsMyContact   bool   `json:"is_my_contact"` // 是否是我的好友
-	GroupCount    int    `json:"group_count"`   // 出现在多少个共同群里
+	Name        string `json:"name"`
+	Username    string `json:"username"` // wxid，可能为空
+	Avatar      string `json:"avatar,omitempty"`
+	IsMyContact bool   `json:"is_my_contact"` // 是否是我的好友
+	GroupCount  int    `json:"group_count"`   // 出现在多少个共同群里
 }
 
 // CommonCircleResult 共同社交圈结果
 type CommonCircleResult struct {
-	User1Name    string               `json:"user1_name"`
-	User2Name    string               `json:"user2_name"`
-	SharedGroups []CommonCircleGroup  `json:"shared_groups"`
+	User1Name     string              `json:"user1_name"`
+	User2Name     string              `json:"user2_name"`
+	SharedGroups  []CommonCircleGroup `json:"shared_groups"`
 	CommonFriends []CommonFriend      `json:"common_friends"` // 按 group_count 降序
 }
 
@@ -4069,7 +4425,7 @@ func containsEmoji(s string) bool {
 			r >= 0xFE00 && r <= 0xFE0F ||
 			r >= 0x1F000 && r <= 0x1F02F ||
 			unicode.Is(unicode.So, r) || // Symbols, Other
-			unicode.Is(unicode.Sk, r) {  // Symbols, Modifier
+			unicode.Is(unicode.Sk, r) { // Symbols, Modifier
 			return true
 		}
 	}
@@ -4110,7 +4466,7 @@ func (s *ContactService) GetCoolingRanking() []CoolingEntry {
 
 		// 用 SQL GROUP BY 按月聚合，避免逐行扫描
 		monthly := make(map[string]int)
-		for _, mdb := range s.dbMgr.MessageDBs {
+		for _, mdb := range s.msgRepo.DBsForUsername(c.Username) {
 			rows, err := mdb.Query(fmt.Sprintf(
 				`SELECT strftime('%%Y-%%m', create_time + %d, 'unixepoch') AS month, COUNT(*) FROM [%s] GROUP BY month`,
 				tzOffset, tableName))
@@ -4246,7 +4602,7 @@ func (s *ContactService) GlobalSearch(ctx context.Context, q, searchType string)
 		var msgs []ChatMessage
 		var contactRowID int64 = -1 // 仅私聊用，用来判断 isMine
 
-		for _, mdb := range s.dbMgr.MessageDBs {
+		for _, mdb := range s.msgRepo.DBsForUsername(username) {
 			select {
 			case <-ctx.Done():
 				return
@@ -4409,7 +4765,7 @@ func (s *ContactService) buildGroupDailyHeatmap() map[string]int {
 	twFilter := s.timeWhere()
 	for _, groupUname := range groupUsernames {
 		tableName := db.GetTableName(groupUname)
-		for _, mdb := range s.dbMgr.MessageDBs {
+		for _, mdb := range s.msgRepo.DBsForUsername(groupUname) {
 			var query string
 			if twFilter == "" {
 				query = fmt.Sprintf("SELECT create_time FROM [%s]", tableName)
@@ -4473,7 +4829,7 @@ func (s *ContactService) GetDayActivity(date string) (contacts []CalendarDayEntr
 
 			tableName := db.GetTableName(uname)
 			var total int
-			for _, mdb := range s.dbMgr.MessageDBs {
+			for _, mdb := range s.msgRepo.DBsForUsername(uname) {
 				var cnt int
 				mdb.QueryRow(fmt.Sprintf(
 					"SELECT COUNT(*) FROM [%s] WHERE create_time >= %d AND create_time < %d",
@@ -4508,7 +4864,7 @@ func (s *ContactService) GetDayActivity(date string) (contacts []CalendarDayEntr
 			gRows.Scan(&uname, &nick, &remark, &avatar)
 			tableName := db.GetTableName(uname)
 			var total int
-			for _, mdb := range s.dbMgr.MessageDBs {
+			for _, mdb := range s.msgRepo.DBsForUsername(uname) {
 				var cnt int
 				mdb.QueryRow(fmt.Sprintf(
 					"SELECT COUNT(*) FROM [%s] WHERE create_time >= %d AND create_time < %d",
@@ -4542,13 +4898,13 @@ func (s *ContactService) GetDayActivity(date string) (contacts []CalendarDayEntr
 
 // DetectedEvent 自动检测到的日期事件（生日等）
 type DetectedEvent struct {
-	Type        string `json:"type"`         // "birthday"
+	Type        string `json:"type"` // "birthday"
 	Username    string `json:"username"`
 	DisplayName string `json:"display_name"`
 	AvatarURL   string `json:"avatar_url"`
-	Date        string `json:"date"`         // "MM-DD"
-	Years       []int  `json:"years"`        // 在哪些年份检测到
-	Evidence    string `json:"evidence"`     // 触发检测的消息片段
+	Date        string `json:"date"`     // "MM-DD"
+	Years       []int  `json:"years"`    // 在哪些年份检测到
+	Evidence    string `json:"evidence"` // 触发检测的消息片段
 }
 
 // FriendMilestone 友谊里程碑
@@ -4605,7 +4961,7 @@ func (s *ContactService) DetectAnniversaries() ([]DetectedEvent, []FriendMilesto
 			continue
 		}
 		tableName := db.GetTableName(c.Username)
-		for _, mdb := range s.dbMgr.MessageDBs {
+		for _, mdb := range s.msgRepo.DBsForUsername(c.Username) {
 			// 用 SQL LIKE 在数据库层过滤，避免全表扫描
 			rows, err := mdb.Query(fmt.Sprintf(
 				`SELECT create_time, message_content FROM [%s]
@@ -4844,13 +5200,14 @@ func (s *ContactService) GetGroupRelationships(username string) *RelationshipGra
 		return nil
 	}
 	s.groupRelComputing[username] = true
+	generation := s.groupAnalysisGeneration
 	s.groupDetailMu.Unlock()
 
-	go s.computeGroupRelationships(username)
+	go s.computeGroupRelationships(username, generation)
 	return nil
 }
 
-func (s *ContactService) computeGroupRelationships(username string) {
+func (s *ContactService) computeGroupRelationships(username string, generation uint64) {
 	started := time.Now()
 	// 兜底：任何 panic 或 early return 都要清掉 computing 标志，否则前端会永远
 	// 看到"正在分析"转圈。之前 40k 条消息的群查了半小时没出结果，就是因为
@@ -4860,14 +5217,16 @@ func (s *ContactService) computeGroupRelationships(username string) {
 			log.Printf("[GROUPREL] %s panic: %v\n%s", username, r, debug.Stack())
 		}
 		s.groupDetailMu.Lock()
-		if _, ok := s.groupRelCache[username]; !ok {
+		if s.groupAnalysisGeneration == generation {
+			if _, ok := s.groupRelCache[username]; !ok {
 			// panic 或其他原因没写成功 → 放一个空图，让前端拿到"分析失败但已结束"
-			s.groupRelCache[username] = &RelationshipGraph{
-				Nodes: []RelationshipNode{}, Edges: []RelationshipEdge{},
-				Communities: []CommunityInfo{},
+				storeBounded(s.groupRelCache, &s.groupRelCacheOrder, username, &RelationshipGraph{
+					Nodes: []RelationshipNode{}, Edges: []RelationshipEdge{},
+					Communities: []CommunityInfo{},
+				}, groupAnalysisCacheLimit)
 			}
+			delete(s.groupRelComputing, username)
 		}
-		delete(s.groupRelComputing, username)
 		s.groupDetailMu.Unlock()
 		log.Printf("[GROUPREL] %s 耗时 %.1fs", username, time.Since(started).Seconds())
 	}()
@@ -4875,7 +5234,7 @@ func (s *ContactService) computeGroupRelationships(username string) {
 	tableName := db.GetTableName(username)
 	nameMap := s.loadContactNameMap()
 	tw := s.timeWhere()
-	log.Printf("[GROUPREL] %s 开始分析，扫描 %d 个 message DB", username, len(s.dbMgr.MessageDBs))
+	log.Printf("[GROUPREL] %s 开始分析，扫描 %d 个 message DB", username, len(s.msgRepo.DBsForUsername(username)))
 
 	// 收集所有消息的 (timestamp, senderName, content) 按时间排序。
 	// 同时解析 refermsg（局部类型 49 + XML 里 <refermsg>...<chatusr>WXID</chatusr>），
@@ -4895,7 +5254,7 @@ func (s *ContactService) computeGroupRelationships(username string) {
 	// 匹配 <chatusr>WXID</chatusr>。WCDB 的 refermsg XML 就这一个字段可靠地标识被引用者。
 	referRe := regexp.MustCompile(`<chatusr>([^<]+)</chatusr>`)
 
-	for _, mdb := range s.dbMgr.MessageDBs {
+	for _, mdb := range s.msgRepo.DBsForUsername(username) {
 		idToWxid := make(map[int64]string)
 		if nrows, nerr := mdb.Query("SELECT rowid, user_name FROM Name2Id"); nerr == nil {
 			for nrows.Next() {
@@ -5099,8 +5458,10 @@ func (s *ContactService) computeGroupRelationships(username string) {
 
 	graph := &RelationshipGraph{Nodes: nodes, Edges: edges, Communities: communities, Modularity: modularity}
 	s.groupDetailMu.Lock()
-	s.groupRelCache[username] = graph
-	delete(s.groupRelComputing, username)
+	if s.groupAnalysisGeneration == generation {
+		storeBounded(s.groupRelCache, &s.groupRelCacheOrder, username, graph, groupAnalysisCacheLimit)
+		delete(s.groupRelComputing, username)
+	}
 	s.groupDetailMu.Unlock()
 }
 

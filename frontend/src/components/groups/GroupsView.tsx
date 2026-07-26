@@ -2,38 +2,47 @@
  * 群聊画像视图
  */
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { lazy, Suspense, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Users, MessageSquare, MessageCircle, Clock, ChevronRight, ChevronUp, ChevronDown, Loader2, X, BarChart2, EyeOff, Search, Download, Bot, TrendingUp, Flame, Calendar, Crown, Maximize2, Minimize2, Sparkles, Heart, BookOpen, Zap } from 'lucide-react';
-import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import type { GroupInfo, GroupDetail, ContactStats, GroupChatMessage } from '../../types';
-import { SearchContextModal, type SearchContextTarget } from '../search/SearchContextModal';
+import type { SearchContextTarget } from '../search/SearchContextModal';
 import { groupsApi } from '../../services/api';
 import { exportGroupCsv, exportGroupTxt, EXPORT_LIMIT, parseExportResult } from '../../utils/exportChat';
 import { CalendarHeatmap } from '../contact/CalendarHeatmap';
 import { GroupDayChatPanel } from './GroupDayChatPanel';
-import { GroupChatReplay } from './GroupChatReplay';
 import { ClockFingerprint } from './ClockFingerprint';
-import { GroupYearReviewModal } from './GroupYearReviewModal';
-import { GroupMemberModal } from './GroupMemberModal';
 import { getGroupPersonaTags, toneClasses } from '../../utils/groupPersona';
 import { Section } from '../common/Section';
 import { MessageTypePieChart } from '../common/MessageTypePieChart';
 import { usePrivacyMode } from '../../contexts/PrivacyModeContext';
-import { RelationshipGraphPanel } from './RelationshipGraphPanel';
 import {
   MEMBER_RANK_LIMIT_KEY, MEMBER_NAME_WIDTH_KEY,
   DEFAULT_RANK_LIMIT, DEFAULT_NAME_WIDTH,
 } from '../settings/constants';
-import { LLMAnalysisTab } from '../contact/LLMAnalysisTab';
-import { GroupSimChat } from './GroupSimChat';
 import { RelativeTime } from '../common/RelativeTime';
-import { GroupComparePanel } from './GroupComparePanel';
-import { ForgeSkillModal } from '../contact/ForgeSkillModal';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { AIAnalysisBadge } from '../dashboard/ContactTable';
 import { avatarSrc } from '../../utils/avatar';
 import { ErrorState, LoadingState } from '../common/AsyncState';
 import { EmptyState } from '../common/EmptyState';
+
+const SearchContextModal = lazy(() => import('../search/SearchContextModal').then(m => ({ default: m.SearchContextModal })));
+const GroupChatReplay = lazy(() => import('./GroupChatReplay').then(m => ({ default: m.GroupChatReplay })));
+const GroupYearReviewModal = lazy(() => import('./GroupYearReviewModal').then(m => ({ default: m.GroupYearReviewModal })));
+const GroupMemberModal = lazy(() => import('./GroupMemberModal').then(m => ({ default: m.GroupMemberModal })));
+const RelationshipGraphPanel = lazy(() => import('./RelationshipGraphPanel').then(m => ({ default: m.RelationshipGraphPanel })));
+const LLMAnalysisTab = lazy(() => import('../contact/LLMAnalysisTab').then(m => ({ default: m.LLMAnalysisTab })));
+const GroupSimChat = lazy(() => import('./GroupSimChat').then(m => ({ default: m.GroupSimChat })));
+const GroupComparePanel = lazy(() => import('./GroupComparePanel').then(m => ({ default: m.GroupComparePanel })));
+const ForgeSkillModal = lazy(() => import('../contact/ForgeSkillModal').then(m => ({ default: m.ForgeSkillModal })));
+const GroupMonthlyTrendChart = lazy(() => import('./GroupActivityCharts').then(m => ({ default: m.GroupMonthlyTrendChart })));
+const GroupTimeDistributionCharts = lazy(() => import('./GroupActivityCharts').then(m => ({ default: m.GroupTimeDistributionCharts })));
+
+const LazyFallback = () => (
+  <div className="flex min-h-24 items-center justify-center text-gray-400">
+    <Loader2 size={20} className="animate-spin" />
+  </div>
+);
 
 // ─── 群详情弹窗 ───────────────────────────────────────────────────────────────
 
@@ -184,20 +193,28 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({ group, onClo
 
   useEffect(() => {
     let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let controller: AbortController | null = null;
     const poll = () => {
-      groupsApi.getDetail(group.username).then((d) => {
+      controller?.abort();
+      controller = new AbortController();
+      groupsApi.getDetail(group.username, controller.signal).then((d) => {
         if (cancelled) return;
         if (d) {
           setDetail(d);
           setLoading(false);
         } else {
           // 后台还在计算，2秒后重试
-          setTimeout(() => { if (!cancelled) poll(); }, 2000);
+          retryTimer = setTimeout(() => { if (!cancelled) poll(); }, 2000);
         }
       }).catch(() => { if (!cancelled) setLoading(false); });
     };
     poll();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      controller?.abort();
+      if (retryTimer) clearTimeout(retryTimer);
+    };
   }, [group.username]);
 
   const handleSearch = useCallback(async (q: string, speaker?: string) => {
@@ -413,25 +430,33 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({ group, onClo
           className="px-4 sm:px-8 lg:px-10 pb-4 sm:pb-8 pt-4"
         >
         {tab === 'relationships' && (
-          <RelationshipGraphPanel username={group.username} />
+          <Suspense fallback={<LazyFallback />}>
+            <RelationshipGraphPanel username={group.username} />
+          </Suspense>
         )}
 
         {tab === 'ai' && (
-          <LLMAnalysisTab
-            username={group.username}
-            displayName={group.name}
-            isGroup={true}
-            totalMessages={group.total_messages}
-            onOpenSettings={onOpenSettings}
-          />
+          <Suspense fallback={<LazyFallback />}>
+            <LLMAnalysisTab
+              username={group.username}
+              displayName={group.name}
+              isGroup={true}
+              totalMessages={group.total_messages}
+              onOpenSettings={onOpenSettings}
+            />
+          </Suspense>
         )}
 
         {tab === 'replay' && (
-          <GroupChatReplay username={group.username} groupName={group.name} />
+          <Suspense fallback={<LazyFallback />}>
+            <GroupChatReplay username={group.username} groupName={group.name} />
+          </Suspense>
         )}
 
         {tab === 'sim' && (
-          <GroupSimChat group={group} onOpenSettings={onOpenSettings} />
+          <Suspense fallback={<LazyFallback />}>
+            <GroupSimChat group={group} onOpenSettings={onOpenSettings} />
+          </Suspense>
         )}
 
         {tab === 'search' && (
@@ -831,37 +856,9 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({ group, onClo
                       最冷清 {minMonth.month}（{minMonth.count.toLocaleString()} 条）
                     </span>
                   </div>
-                  <ResponsiveContainer width="100%" height={120}>
-                    <AreaChart data={monthlyData} margin={{ top: 4, right: 4, bottom: 0, left: -30 }}>
-                      <defs>
-                        <linearGradient id="groupTrendGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#07c160" stopOpacity={0.3} />
-                          <stop offset="100%" stopColor="#07c160" stopOpacity={0.02} />
-                        </linearGradient>
-                      </defs>
-                      <XAxis
-                        dataKey="label"
-                        tick={{ fontSize: 9, fill: '#bbb' }}
-                        tickLine={false}
-                        interval={Math.max(0, Math.floor(monthlyData.length / 8) - 1)}
-                      />
-                      <YAxis tick={false} axisLine={false} tickLine={false} />
-                      <Tooltip
-                        contentStyle={{ borderRadius: 8, fontSize: 12 }}
-                        formatter={(v: number) => [`${v.toLocaleString()} 条`, '消息数']}
-                        labelFormatter={(l: string) => `20${l.replace('/', ' 年 ')} 月`}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="count"
-                        stroke="#07c160"
-                        strokeWidth={2}
-                        fill="url(#groupTrendGrad)"
-                        dot={false}
-                        activeDot={{ r: 4, fill: '#07c160' }}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                  <Suspense fallback={<LazyFallback />}>
+                    <GroupMonthlyTrendChart data={monthlyData} />
+                  </Suspense>
                 </div>
               );
             })()}
@@ -954,34 +951,9 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({ group, onClo
 
             {/* 24h + 周分布（默认折叠，并排） */}
             <Section title="时间分布" subtitle="24 小时活跃度 + 一周各天的消息总量" defaultOpen={false}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <div className="text-xs text-gray-500 font-semibold mb-1.5">24 小时</div>
-                  <ResponsiveContainer width="100%" height={90}>
-                    <BarChart data={hourlyData} margin={{ top: 0, right: 0, bottom: 0, left: -30 }}>
-                      <XAxis dataKey="label" tick={{ fontSize: 9, fill: '#bbb' }} tickLine={false} interval={3} />
-                      <YAxis tick={false} axisLine={false} tickLine={false} />
-                      <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} formatter={(v) => [`${v} 条`, '']} labelFormatter={(l) => `${l}:00`} />
-                      <Bar dataKey="value" radius={[3, 3, 0, 0]} maxBarSize={14}>
-                        {hourlyData.map((entry, i) => (
-                          <Cell key={i} fill={entry.isLateNight ? '#576b95' : '#10aeff'} opacity={0.8} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500 font-semibold mb-1.5">每周</div>
-                  <ResponsiveContainer width="100%" height={90}>
-                    <BarChart data={weeklyData} margin={{ top: 0, right: 0, bottom: 0, left: -30 }}>
-                      <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#999' }} tickLine={false} />
-                      <YAxis tick={false} axisLine={false} tickLine={false} />
-                      <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} formatter={(v) => [`${v} 条`, '']} />
-                      <Bar dataKey="value" fill="#07c160" radius={[4, 4, 0, 0]} maxBarSize={28} opacity={0.8} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
+              <Suspense fallback={<LazyFallback />}>
+                <GroupTimeDistributionCharts hourlyData={hourlyData} weeklyData={weeklyData} />
+              </Suspense>
             </Section>
 
             {/* 日历热力图 */}
@@ -1033,21 +1005,25 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({ group, onClo
       )}
 
       {contextTarget && (
-        <SearchContextModal
-          {...contextTarget}
-          onClose={() => setContextTarget(null)}
-        />
+        <Suspense fallback={null}>
+          <SearchContextModal
+            {...contextTarget}
+            onClose={() => setContextTarget(null)}
+          />
+        </Suspense>
       )}
 
       {forgeOpen && (
-        <ForgeSkillModal
-          open={forgeOpen}
-          onClose={() => setForgeOpen(false)}
-          skillType="group"
-          username={group.username}
-          displayName={group.name}
-          onOpenSettings={onOpenSettings}
-        />
+        <Suspense fallback={null}>
+          <ForgeSkillModal
+            open={forgeOpen}
+            onClose={() => setForgeOpen(false)}
+            skillType="group"
+            username={group.username}
+            displayName={group.name}
+            onOpenSettings={onOpenSettings}
+          />
+        </Suspense>
       )}
 
       <ConfirmDialog
@@ -1061,23 +1037,27 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({ group, onClo
         onCancel={() => setBlockConfirmOpen(false)}
       />
       {showYearReview && (
-        <GroupYearReviewModal
-          username={group.username}
-          fallbackName={group.name}
-          onClose={() => setShowYearReview(false)}
-        />
+        <Suspense fallback={null}>
+          <GroupYearReviewModal
+            username={group.username}
+            fallbackName={group.name}
+            onClose={() => setShowYearReview(false)}
+          />
+        </Suspense>
       )}
       {memberDetail && (() => {
         const memberContact = findContact(memberDetail.speaker);
         return (
-          <GroupMemberModal
-            groupUsername={group.username}
-            groupName={group.name}
-            memberWxid={memberDetail.wxid}
-            memberName={memberDetail.speaker}
-            onClose={() => setMemberDetail(null)}
-            onOpenContact={memberContact ? () => onContactClick(memberContact) : null}
-          />
+          <Suspense fallback={null}>
+            <GroupMemberModal
+              groupUsername={group.username}
+              groupName={group.name}
+              memberWxid={memberDetail.wxid}
+              memberName={memberDetail.speaker}
+              onClose={() => setMemberDetail(null)}
+              onOpenContact={memberContact ? () => onContactClick(memberContact) : null}
+            />
+          </Suspense>
         );
       })()}
     </div>
@@ -1130,10 +1110,10 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ allContacts, onContactCl
   const [compareSelected, setCompareSelected] = useState<Set<string>>(new Set());
   const [showCompare, setShowCompare] = useState(false);
 
-  const loadGroups = useCallback(() => {
+  const loadGroups = useCallback((force = false) => {
     setLoading(true);
     setLoadError(false);
-    groupsApi.getList().then((data) => {
+    groupsApi.getList(force).then((data) => {
       setGroups(data || []);
       setLoading(false);
     }).catch(() => {
@@ -1142,7 +1122,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ allContacts, onContactCl
     });
   }, []);
 
-  useEffect(() => { loadGroups(); }, [loadGroups]);
+  useEffect(() => { void loadGroups(); }, [loadGroups]);
 
   const filtered = groups.filter(g => {
     if (blockedGroups.some(b => b === g.username || b === g.name)) return false;
@@ -1213,7 +1193,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ allContacts, onContactCl
   }
 
   if (loadError) {
-    return <ErrorState title="群聊加载失败" onRetry={loadGroups} />;
+    return <ErrorState title="群聊加载失败" onRetry={() => loadGroups(true)} />;
   }
 
   const totalMembers = groups.reduce((s, g) => s + (g.member_count ?? 0), 0);
@@ -1631,7 +1611,9 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ allContacts, onContactCl
       {showCompare && (() => {
         const selected = groups.filter(g => compareSelected.has(g.username));
         return selected.length >= 2 ? (
-          <GroupComparePanel groups={selected} onClose={() => setShowCompare(false)} />
+          <Suspense fallback={<LazyFallback />}>
+            <GroupComparePanel groups={selected} onClose={() => setShowCompare(false)} />
+          </Suspense>
         ) : null;
       })()}
     </div>

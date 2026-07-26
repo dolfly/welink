@@ -14,10 +14,10 @@ import { WordCloudCanvas } from './WordCloudCanvas';
 import { RelationshipThermometer } from './RelationshipThermometer';
 import { SecretWordsCard } from './SecretWordsCard';
 import { ConfirmDialog } from '../common/ConfirmDialog';
-import { ContactDetailCharts } from './ContactDetailCharts';
-import { SentimentChart } from './SentimentChart';
 import { MessageTypePieChart } from '../common/MessageTypePieChart';
 // ─── 重内容懒加载：只在点对应 tab / 打开对应 modal 才下 chunk ──────────────
+const ContactDetailCharts = lazy(() => import('./ContactDetailCharts').then(m => ({ default: m.ContactDetailCharts })));
+const SentimentChart      = lazy(() => import('./SentimentChart').then(m => ({ default: m.SentimentChart })));
 const LLMAnalysisTab     = lazy(() => import('./LLMAnalysisTab').then(m => ({ default: m.LLMAnalysisTab })));
 const AICloneTab         = lazy(() => import('./AICloneTab').then(m => ({ default: m.AICloneTab })));
 const AIInsights         = lazy(() => import('./AIInsights').then(m => ({ default: m.AIInsights })));
@@ -143,6 +143,9 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
   };
   const exportPanelRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const detailRequestRef = useRef<AbortController | null>(null);
+  const sentimentRequestRef = useRef<AbortController | null>(null);
+  const commonGroupsRequestRef = useRef<AbortController | null>(null);
 
   // 点击外部关闭导出面板
   useEffect(() => {
@@ -185,39 +188,60 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
   }, [contact, exportFrom, exportTo]);
 
   const fetchDetail = useCallback(async (username: string) => {
+    detailRequestRef.current?.abort();
+    const controller = new AbortController();
+    detailRequestRef.current = controller;
     setDetailLoading(true);
     setDetailError(false);
     try {
-      const d = await contactsApi.getDetail(username);
+      const d = await contactsApi.getDetail(username, controller.signal);
+      if (controller.signal.aborted) return;
       setDetail(d);
     } catch (e) {
+      if (controller.signal.aborted) return;
       console.error('Failed to fetch detail', e);
       setDetailError(true);
     } finally {
-      setDetailLoading(false);
+      if (!controller.signal.aborted && detailRequestRef.current === controller) {
+        setDetailLoading(false);
+      }
     }
   }, []);
 
   const fetchSentiment = useCallback(async (username: string, mine: boolean) => {
+    sentimentRequestRef.current?.abort();
+    const controller = new AbortController();
+    sentimentRequestRef.current = controller;
     setSentimentLoading(true);
     setSentimentError(false);
     try {
-      const d = await contactsApi.getSentiment(username, mine);
+      const d = await contactsApi.getSentiment(username, mine, controller.signal);
+      if (controller.signal.aborted) return;
       setSentiment(d);
     } catch (e) {
+      if (controller.signal.aborted) return;
       console.error('Failed to fetch sentiment', e);
       setSentimentError(true);
     } finally {
-      setSentimentLoading(false);
+      if (!controller.signal.aborted && sentimentRequestRef.current === controller) {
+        setSentimentLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
     if (contact) {
+      detailRequestRef.current?.abort();
+      sentimentRequestRef.current?.abort();
+      commonGroupsRequestRef.current?.abort();
+      const commonGroupsController = new AbortController();
+      commonGroupsRequestRef.current = commonGroupsController;
       setTab('wordcloud');
       setDetail(null);
+      setDetailLoading(false);
       setDetailError(false);
       setSentiment(null);
+      setSentimentLoading(false);
       setSentimentError(false);
       setIncludeMine(false);
       setCommonGroups([]);
@@ -227,9 +251,18 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
       fetchWordCloud(contact.username, false);
       // 首屏只计算当前可见的词云。深度画像和情感分析都是全历史扫描，
       // 等用户真正切到对应 tab 再加载，避免一次打开弹窗同时打满 SQLite。
-      contactsApi.getCommonGroups(contact.username)
-        .then(groups => setCommonGroups(groups ?? []))
-        .catch(() => setCommonGroups([]));
+      contactsApi.getCommonGroups(contact.username, commonGroupsController.signal)
+        .then(groups => {
+          if (!commonGroupsController.signal.aborted) setCommonGroups(groups ?? []);
+        })
+        .catch(() => {
+          if (!commonGroupsController.signal.aborted) setCommonGroups([]);
+        });
+      return () => {
+        commonGroupsController.abort();
+        detailRequestRef.current?.abort();
+        sentimentRequestRef.current?.abort();
+      };
     }
   }, [contact, fetchWordCloud, fetchDetail, fetchSentiment]);
 
@@ -777,13 +810,15 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
           ) : detailError ? (
             <ErrorState title="深度画像加载失败" onRetry={() => fetchDetail(contact.username)} />
           ) : detail ? (
-            <ContactDetailCharts
-              detail={detail}
-              totalMessages={contact.total_messages}
-              username={contact.username}
-              contactName={displayName}
-              contactAvatarUrl={contact.small_head_url || contact.big_head_url}
-            />
+            <Suspense fallback={<TabLoading />}>
+              <ContactDetailCharts
+                detail={detail}
+                totalMessages={contact.total_messages}
+                username={contact.username}
+                contactName={displayName}
+                contactAvatarUrl={contact.small_head_url || contact.big_head_url}
+              />
+            </Suspense>
           ) : (
             <div className="text-center text-gray-300 py-12">暂无深度数据</div>
           )
@@ -795,7 +830,9 @@ export const ContactModal: React.FC<ContactModalProps> = ({ contact, onClose, on
           ) : sentimentError ? (
             <ErrorState title="情感分析加载失败" onRetry={() => fetchSentiment(contact.username, includeMine)} />
           ) : sentiment ? (
-            <SentimentChart data={sentiment} username={contact.username} contactName={displayName} includeMine={includeMine} />
+            <Suspense fallback={<TabLoading />}>
+              <SentimentChart data={sentiment} username={contact.username} contactName={displayName} includeMine={includeMine} />
+            </Suspense>
           ) : (
             <div className="text-center text-gray-300 py-12">暂无情感数据</div>
           )

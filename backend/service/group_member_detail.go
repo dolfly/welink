@@ -55,10 +55,10 @@ type GroupMemberDetail struct {
 	LastMessageTs    int64  `json:"last_message_ts"`
 	ActiveDays       int    `json:"active_days"` // 有发言的天数
 
-	Rank         int     `json:"rank"`          // 群内发言排名（1 起）
-	TotalSpoken  int     `json:"total_spoken"`  // 群内发过言的人数
-	SharePct     float64 `json:"share_pct"`     // 占全群消息百分比
-	GroupTotal   int64   `json:"group_total"`   // 全群消息总数
+	Rank         int     `json:"rank"`           // 群内发言排名（1 起）
+	TotalSpoken  int     `json:"total_spoken"`   // 群内发过言的人数
+	SharePct     float64 `json:"share_pct"`      // 占全群消息百分比
+	GroupTotal   int64   `json:"group_total"`    // 全群消息总数
 	LateNightCnt int64   `json:"late_night_cnt"` // 深夜发言数（0~5 点）
 
 	HourlyDist   [24]int         `json:"hourly_dist"`
@@ -113,7 +113,7 @@ func (s *ContactService) GetGroupMemberDetail(groupUsername, memberWxid string) 
 	}
 	var recent []recentEntry
 
-	for _, mdb := range s.dbMgr.MessageDBs {
+	for _, mdb := range s.msgRepo.DBsForUsername(groupUsername) {
 		// 本 DB 的 rowid ↔ wxid，同时记下目标成员在本 DB 的 rowid
 		idToWxid := make(map[int64]string)
 		var memberRowIDs []int64

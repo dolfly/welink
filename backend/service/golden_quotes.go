@@ -25,12 +25,12 @@ import (
 )
 
 const (
-	gqMaxScan        = 60000           // 每个群最多扫的消息数（按时间倒序裁剪）
+	gqMaxScan        = 60000 // 每个群最多扫的消息数（按时间倒序裁剪）
 	gqDefaultLimit   = 10
 	gqMaxLimit       = 50
-	gqMaxQuoteRunes  = 240             // 显示截断
+	gqMaxQuoteRunes  = 240 // 显示截断
 	gqCacheTTL       = 10 * time.Minute
-	gqMaxRefermsgRaw = 128 * 1024      // 单条原始 message_content 大于这个就跳过（防御 XML 爆大）
+	gqMaxRefermsgRaw = 128 * 1024 // 单条原始 message_content 大于这个就跳过（防御 XML 爆大）
 	gqMaxRepliers    = 3
 )
 
@@ -43,37 +43,37 @@ type GoldenQuoteReplier struct {
 
 // GoldenQuoteRaw 一条「群金句」聚合结果
 type GoldenQuoteRaw struct {
-	Svrid       string               `json:"svrid"`                  // 服务端消息 ID（用于去重；空时是 content+speaker fallback）
-	Speaker     string               `json:"speaker"`                // 发言人显示名
+	Svrid       string               `json:"svrid"`   // 服务端消息 ID（用于去重；空时是 content+speaker fallback）
+	Speaker     string               `json:"speaker"` // 发言人显示名
 	SpeakerWxid string               `json:"speaker_wxid"`
 	Avatar      string               `json:"avatar,omitempty"`
-	Content     string               `json:"content"`                // 原始消息文本（已去前后空白 + 截断）
-	QuoteCount  int                  `json:"quote_count"`            // 被引用次数
-	Ts          int64                `json:"ts,omitempty"`           // 原始消息 unix 秒
-	Date        string               `json:"date,omitempty"`         // YYYY-MM-DD
-	Time        string               `json:"time,omitempty"`         // HH:MM
-	Repliers    []GoldenQuoteReplier `json:"repliers,omitempty"`     // Top 引用者
+	Content     string               `json:"content"`            // 原始消息文本（已去前后空白 + 截断）
+	QuoteCount  int                  `json:"quote_count"`        // 被引用次数
+	Ts          int64                `json:"ts,omitempty"`       // 原始消息 unix 秒
+	Date        string               `json:"date,omitempty"`     // YYYY-MM-DD
+	Time        string               `json:"time,omitempty"`     // HH:MM
+	Repliers    []GoldenQuoteReplier `json:"repliers,omitempty"` // Top 引用者
 }
 
 // GoldenQuotesData 整个群的金句榜结果
 type GoldenQuotesData struct {
 	GroupName    string           `json:"group_name"`
 	RoomID       string           `json:"room_id"`
-	TotalScanned int              `json:"total_scanned"`  // 扫描的消息数（含非引用）
-	TotalQuotes  int              `json:"total_quotes"`   // 命中引用的消息数
-	UniqueQuoted int              `json:"unique_quoted"`  // 不同的"被引用原文"数
+	TotalScanned int              `json:"total_scanned"` // 扫描的消息数（含非引用）
+	TotalQuotes  int              `json:"total_quotes"`  // 命中引用的消息数
+	UniqueQuoted int              `json:"unique_quoted"` // 不同的"被引用原文"数
 	Quotes       []GoldenQuoteRaw `json:"quotes"`
 	GeneratedAt  int64            `json:"generated_at"`
-	Truncated    bool             `json:"truncated"`      // 是否触发了 gqMaxScan 上限
+	Truncated    bool             `json:"truncated"` // 是否触发了 gqMaxScan 上限
 }
 
 // 解析 refermsg XML 用的局部 regex —— 都只跑在已经确认含 <refermsg> 的内容上
 var (
-	gqSvridRe       = regexp.MustCompile(`<svrid>([^<]+)</svrid>`)
-	gqChatusrRe     = regexp.MustCompile(`<chatusr>([^<]+)</chatusr>`)
-	gqDisplayRe     = regexp.MustCompile(`<displayname>([^<]+)</displayname>`)
-	gqRefTypeRe     = regexp.MustCompile(`<refermsg>[\s\S]*?<type>(\d+)</type>`)
-	gqCreateTimeRe  = regexp.MustCompile(`<refermsg>[\s\S]*?<createtime>(\d+)</createtime>`)
+	gqSvridRe      = regexp.MustCompile(`<svrid>([^<]+)</svrid>`)
+	gqChatusrRe    = regexp.MustCompile(`<chatusr>([^<]+)</chatusr>`)
+	gqDisplayRe    = regexp.MustCompile(`<displayname>([^<]+)</displayname>`)
+	gqRefTypeRe    = regexp.MustCompile(`<refermsg>[\s\S]*?<type>(\d+)</type>`)
+	gqCreateTimeRe = regexp.MustCompile(`<refermsg>[\s\S]*?<createtime>(\d+)</createtime>`)
 	// content 可能裹 CDATA，也可能直接是文本。两种都吃。
 	gqContentCDATARe = regexp.MustCompile(`<refermsg>[\s\S]*?<content><!\[CDATA\[([\s\S]*?)\]\]></content>`)
 	gqContentPlainRe = regexp.MustCompile(`<refermsg>[\s\S]*?<content>([\s\S]*?)</content>`)
@@ -134,22 +134,22 @@ func (s *ContactService) GetGroupGoldenQuotes(uname string, limit int, from, to 
 
 	// 聚合容器
 	type quoteAgg struct {
-		svrid      string
-		speaker    string
-		spkWxid    string
-		avatar     string
-		content    string
-		ts         int64
-		count      int
-		repliers   map[string]int    // replier display -> count
-		replierAv  map[string]string // replier display -> avatar
+		svrid     string
+		speaker   string
+		spkWxid   string
+		avatar    string
+		content   string
+		ts        int64
+		count     int
+		repliers  map[string]int    // replier display -> count
+		replierAv map[string]string // replier display -> avatar
 	}
 	bucket := make(map[string]*quoteAgg)
 	totalScanned := 0
 	totalQuotes := 0
 	truncated := false
 
-	for _, mdb := range s.dbMgr.MessageDBs {
+	for _, mdb := range s.msgRepo.DBsForUsername(uname) {
 		// rowid → wxid
 		idToWxid := make(map[int64]string)
 		if nrows, nerr := mdb.Query("SELECT rowid, user_name FROM Name2Id"); nerr == nil {

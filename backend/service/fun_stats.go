@@ -23,10 +23,10 @@ type CompanionEntry struct {
 
 // CompanionStats 是陪伴时长聚合
 type CompanionStats struct {
-	TotalMinutes int64            `json:"total_minutes"`  // 全局累计
-	Entries      []CompanionEntry `json:"entries"`        // 按 TotalMinutes 降序
-	GeneratedAt  int64            `json:"generated_at"`   // Unix 秒
-	GapSeconds   int64            `json:"gap_seconds"`    // 用于切 session 的阈值
+	TotalMinutes int64            `json:"total_minutes"` // 全局累计
+	Entries      []CompanionEntry `json:"entries"`       // 按 TotalMinutes 降序
+	GeneratedAt  int64            `json:"generated_at"`  // Unix 秒
+	GapSeconds   int64            `json:"gap_seconds"`   // 用于切 session 的阈值
 }
 
 // 简单缓存 10 分钟，避免被多次点击反复扫表
@@ -82,12 +82,13 @@ func (s *ContactService) GetCompanionStats(refresh bool) (*CompanionStats, error
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			sem <- struct{}{}; defer func() { <-sem }()
+			sem <- struct{}{}
+			defer func() { <-sem }()
 			table := db.GetTableName(contacts[idx].Username)
 
 			// 把每个 message DB 里该联系人的时间戳全读出来
 			var all []int64
-			for _, mdb := range s.dbMgr.MessageDBs {
+			for _, mdb := range s.msgRepo.DBsForUsername(contacts[idx].Username) {
 				rows, err := mdb.Query(fmt.Sprintf("SELECT create_time FROM [%s] ORDER BY create_time", table))
 				if err != nil {
 					continue
@@ -156,15 +157,15 @@ func (s *ContactService) GetCompanionStats(refresh bool) (*CompanionStats, error
 
 // GhostMonth 某联系人在某个月消息量骤降 / 中断的事件
 type GhostMonth struct {
-	Username     string `json:"username"`
-	Name         string `json:"name"`
-	Avatar       string `json:"avatar"`
-	Month        string `json:"month"`          // "2024-03"
-	BeforeCount  int64  `json:"before_count"`   // 骤降前一月消息数
-	DuringCount  int64  `json:"during_count"`   // 该月消息数
-	AfterCount   int64  `json:"after_count"`    // 骤降后恢复月消息数（可能为 0，表示没恢复）
+	Username     string  `json:"username"`
+	Name         string  `json:"name"`
+	Avatar       string  `json:"avatar"`
+	Month        string  `json:"month"`         // "2024-03"
+	BeforeCount  int64   `json:"before_count"`  // 骤降前一月消息数
+	DuringCount  int64   `json:"during_count"`  // 该月消息数
+	AfterCount   int64   `json:"after_count"`   // 骤降后恢复月消息数（可能为 0，表示没恢复）
 	DropRatio    float64 `json:"drop_ratio"`    // 1 - during/before；0.8 即骤降 80%
-	TotalHistory int64  `json:"total_history"`  // 总消息数（用于前端做上下文）
+	TotalHistory int64   `json:"total_history"` // 总消息数（用于前端做上下文）
 }
 
 // GhostMonthsResult Ghost 月汇总
@@ -174,8 +175,8 @@ type GhostMonthsResult struct {
 }
 
 var (
-	ghostMonthsMu     sync.Mutex
-	ghostMonthsCache  *GhostMonthsResult
+	ghostMonthsMu      sync.Mutex
+	ghostMonthsCache   *GhostMonthsResult
 	ghostMonthsCacheAt time.Time
 )
 
@@ -209,27 +210,38 @@ func (s *ContactService) GetGhostMonths(refresh bool) (*GhostMonthsResult, error
 		wg.Add(1)
 		go func(c ContactStatsExtended) {
 			defer wg.Done()
-			sem <- struct{}{}; defer func() { <-sem }()
+			sem <- struct{}{}
+			defer func() { <-sem }()
 
 			table := db.GetTableName(c.Username)
 			monthly := make(map[string]int64) // "2024-03" → count
 			var firstTs, lastTs int64
-			for _, mdb := range s.dbMgr.MessageDBs {
+			for _, mdb := range s.msgRepo.DBsForUsername(c.Username) {
 				rows, err := mdb.Query(fmt.Sprintf("SELECT create_time FROM [%s] ORDER BY create_time", table))
-				if err != nil { continue }
+				if err != nil {
+					continue
+				}
 				for rows.Next() {
 					var ts int64
 					if err := rows.Scan(&ts); err == nil && ts > 0 {
 						m := time.Unix(ts, 0).Format("2006-01")
 						monthly[m]++
-						if firstTs == 0 || ts < firstTs { firstTs = ts }
-						if ts > lastTs { lastTs = ts }
+						if firstTs == 0 || ts < firstTs {
+							firstTs = ts
+						}
+						if ts > lastTs {
+							lastTs = ts
+						}
 					}
 				}
 				rows.Close()
 			}
-			if len(monthly) < 6 { return } // 历史太短不做判定
-			if firstTs == 0 || lastTs == 0 { return }
+			if len(monthly) < 6 {
+				return
+			} // 历史太短不做判定
+			if firstTs == 0 || lastTs == 0 {
+				return
+			}
 
 			// 补齐中间"零消息"的月份
 			start := time.Unix(firstTs, 0)
@@ -246,20 +258,30 @@ func (s *ContactService) GetGhostMonths(refresh bool) (*GhostMonthsResult, error
 				series = append(series, pt{k, monthly[k]})
 				cur = cur.AddDate(0, 1, 0)
 			}
-			if len(series) < 3 { return }
+			if len(series) < 3 {
+				return
+			}
 
 			// 找最大单月骤降：before (>=10) → during (<=before*0.2) 满足
 			name := c.Remark
-			if name == "" { name = c.Nickname }
-			if name == "" { name = c.Username }
+			if name == "" {
+				name = c.Nickname
+			}
+			if name == "" {
+				name = c.Username
+			}
 
 			// 只保留整个历史里骤降最剧烈的那个月，避免一个人刷几条重复
 			var best *GhostMonth
 			for idx := 1; idx < len(series); idx++ {
 				before := series[idx-1].count
 				during := series[idx].count
-				if before < 10 { continue }
-				if during > int64(float64(before)*0.2) { continue } // 降幅不足 80%
+				if before < 10 {
+					continue
+				}
+				if during > int64(float64(before)*0.2) {
+					continue
+				} // 降幅不足 80%
 				var after int64
 				if idx+1 < len(series) {
 					after = series[idx+1].count
@@ -268,7 +290,7 @@ func (s *ContactService) GetGhostMonths(refresh bool) (*GhostMonthsResult, error
 				if best == nil || drop > best.DropRatio {
 					best = &GhostMonth{
 						Username: c.Username, Name: name, Avatar: c.SmallHeadURL,
-						Month: series[idx].key,
+						Month:       series[idx].key,
 						BeforeCount: before, DuringCount: during, AfterCount: after,
 						DropRatio: drop, TotalHistory: c.TotalMessages,
 					}
@@ -309,7 +331,7 @@ type LikeMeEntry struct {
 	Username  string   `json:"username"`
 	Name      string   `json:"name"`
 	Avatar    string   `json:"avatar"`
-	Score     float64  `json:"score"`     // 余弦相似度 0~1
+	Score     float64  `json:"score"`      // 余弦相似度 0~1
 	TopShared []string `json:"top_shared"` // 共同高频词
 }
 
@@ -409,24 +431,32 @@ func (s *ContactService) GetLikeMeFriends(refresh bool) (*LikeMeResult, error) {
 
 	// 取 Top 5
 	topN := 5
-	if len(scores) < topN { topN = len(scores) }
+	if len(scores) < topN {
+		topN = len(scores)
+	}
 
 	// 并行拿 Top 5 联系人的高频词，供前端展示（可空）
 	entries := make([]LikeMeEntry, 0, topN)
 	for i := 0; i < topN; i++ {
 		c := contacts[scores[i].idx]
 		name := c.Remark
-		if name == "" { name = c.Nickname }
-		if name == "" { name = c.Username }
+		if name == "" {
+			name = c.Nickname
+		}
+		if name == "" {
+			name = c.Username
+		}
 		var shared []string
 		wc := s.GetWordCloud(c.Username, false)
 		for _, w := range wc {
 			shared = append(shared, w.Word)
-			if len(shared) >= 5 { break }
+			if len(shared) >= 5 {
+				break
+			}
 		}
 		entries = append(entries, LikeMeEntry{
 			Username: c.Username, Name: name, Avatar: c.SmallHeadURL,
-			Score: math.Round(scores[i].score*1000) / 1000,
+			Score:     math.Round(scores[i].score*1000) / 1000,
 			TopShared: shared,
 		})
 	}
@@ -445,11 +475,11 @@ func (s *ContactService) GetLikeMeFriends(refresh bool) (*LikeMeResult, error) {
 // 结果缓存 2 小时（年鉴不太变化）。
 
 type AlmanacEntry struct {
-	Year      int    `json:"year"`
-	Word      string `json:"word"`       // 年度代表词
-	Count     int    `json:"count"`      // 出现次数
-	Messages  int    `json:"messages"`   // 当年我发出的文本消息数
-	Runners   []string `json:"runners"`  // 第 2~5 名高频词（展示用）
+	Year     int      `json:"year"`
+	Word     string   `json:"word"`     // 年度代表词
+	Count    int      `json:"count"`    // 出现次数
+	Messages int      `json:"messages"` // 当年我发出的文本消息数
+	Runners  []string `json:"runners"`  // 第 2~5 名高频词（展示用）
 }
 
 type WordAlmanacResult struct {
@@ -475,7 +505,10 @@ func (s *ContactService) GetWordAlmanac(refresh bool) (*WordAlmanacResult, error
 
 	// 选活跃联系人做采样源（全量 N 倍联系人会导致词云扫描爆炸）
 	s.cacheMu.RLock()
-	type cc struct{ username string; msgs int64 }
+	type cc struct {
+		username string
+		msgs     int64
+	}
 	list := make([]cc, 0)
 	for _, c := range s.cache {
 		if c.MyMessages >= 100 {
@@ -494,7 +527,7 @@ func (s *ContactService) GetWordAlmanac(refresh bool) (*WordAlmanacResult, error
 
 	for _, cc := range list {
 		tableName := db.GetTableName(cc.username)
-		for _, mdb := range s.dbMgr.MessageDBs {
+		for _, mdb := range s.msgRepo.DBsForUsername(cc.username) {
 			// 只要 "我发的" 文本消息：local_type=1 且 real_sender_id ≠ 对方 rowid
 			// 简化：取出所有 type=1 消息后按"剥前缀是否命中"判断是否对方，不是的就当作自己
 			rows, err := mdb.Query(fmt.Sprintf(
@@ -555,7 +588,10 @@ func (s *ContactService) GetWordAlmanac(refresh bool) (*WordAlmanacResult, error
 		if yearMsgs[y] < 50 {
 			continue // 年消息量太少，代表词不稳定
 		}
-		type kv struct{ k string; v int }
+		type kv struct {
+			k string
+			v int
+		}
 		arr := make([]kv, 0, len(wm))
 		for k, v := range wm {
 			arr = append(arr, kv{k, v})
@@ -588,13 +624,13 @@ func (s *ContactService) GetWordAlmanac(refresh bool) (*WordAlmanacResult, error
 // 对方在 30 分钟内回复就算成功，记录响应时间；最后按 "响应率 + 中位响应时间" 综合排序。
 
 type InsomniaEntry struct {
-	Username       string  `json:"username"`
-	Name           string  `json:"name"`
-	Avatar         string  `json:"avatar"`
-	MyCalls        int     `json:"my_calls"`         // 凌晨我向 TA 发消息的次数
-	Responded      int     `json:"responded"`        // 对方 30min 内回复的次数
-	ResponseRate   float64 `json:"response_rate"`    // responded / my_calls
-	MedianResponseSec int64 `json:"median_response_sec"` // 中位响应时间（秒）
+	Username          string  `json:"username"`
+	Name              string  `json:"name"`
+	Avatar            string  `json:"avatar"`
+	MyCalls           int     `json:"my_calls"`            // 凌晨我向 TA 发消息的次数
+	Responded         int     `json:"responded"`           // 对方 30min 内回复的次数
+	ResponseRate      float64 `json:"response_rate"`       // responded / my_calls
+	MedianResponseSec int64   `json:"median_response_sec"` // 中位响应时间（秒）
 }
 
 type InsomniaResult struct {
@@ -636,42 +672,58 @@ func (s *ContactService) GetInsomniaTop(refresh bool) (*InsomniaResult, error) {
 		wg.Add(1)
 		go func(c ContactStatsExtended) {
 			defer wg.Done()
-			sem <- struct{}{}; defer func() { <-sem }()
+			sem <- struct{}{}
+			defer func() { <-sem }()
 
 			tableName := db.GetTableName(c.Username)
 			// 按时间排序取所有消息，需要判定方向：real_sender_id == Name2Id[username] 即对方；否则我
-			type msg struct{ ts int64; mine bool }
+			type msg struct {
+				ts   int64
+				mine bool
+			}
 			var msgs []msg
-			for _, mdb := range s.dbMgr.MessageDBs {
+			for _, mdb := range s.msgRepo.DBsForUsername(c.Username) {
 				// 对方的 rowid
 				var otherRowID int64
 				if row := mdb.QueryRow("SELECT rowid FROM Name2Id WHERE user_name = ?", c.Username); row != nil {
 					row.Scan(&otherRowID)
 				}
 				rows, err := mdb.Query(fmt.Sprintf("SELECT create_time, COALESCE(real_sender_id,0) FROM [%s] ORDER BY create_time ASC", tableName))
-				if err != nil { continue }
+				if err != nil {
+					continue
+				}
 				for rows.Next() {
 					var ts, sid int64
-					if err := rows.Scan(&ts, &sid); err != nil { continue }
+					if err := rows.Scan(&ts, &sid); err != nil {
+						continue
+					}
 					// 只关心凌晨 2-4 点的消息以及紧接它们的回复
 					msgs = append(msgs, msg{ts, sid != otherRowID && sid != 0})
 				}
 				rows.Close()
 			}
-			if len(msgs) < 4 { return }
+			if len(msgs) < 4 {
+				return
+			}
 			sort.Slice(msgs, func(i, j int) bool { return msgs[i].ts < msgs[j].ts })
 
 			var calls, resp int
 			respSecs := make([]int64, 0)
 			for i, m := range msgs {
-				if !m.mine { continue }
+				if !m.mine {
+					continue
+				}
 				h := time.Unix(m.ts, 0).In(s.tz).Hour()
-				if h < 2 || h >= 4 { continue }
+				if h < 2 || h >= 4 {
+					continue
+				}
 				calls++
 				// 找下一条对方的消息
 				for j := i + 1; j < len(msgs); j++ {
 					dt := msgs[j].ts - m.ts
-					if dt > 30*60 { break }
+					if dt > 30*60 {
+						break
+					}
 					if !msgs[j].mine {
 						resp++
 						respSecs = append(respSecs, dt)
@@ -679,7 +731,9 @@ func (s *ContactService) GetInsomniaTop(refresh bool) (*InsomniaResult, error) {
 					}
 				}
 			}
-			if calls < 3 { return } // 少于 3 次呼叫样本太小
+			if calls < 3 {
+				return
+			} // 少于 3 次呼叫样本太小
 
 			sort.Slice(respSecs, func(i, j int) bool { return respSecs[i] < respSecs[j] })
 			var median int64
@@ -687,14 +741,18 @@ func (s *ContactService) GetInsomniaTop(refresh bool) (*InsomniaResult, error) {
 				median = respSecs[len(respSecs)/2]
 			}
 			name := c.Remark
-			if name == "" { name = c.Nickname }
-			if name == "" { name = c.Username }
+			if name == "" {
+				name = c.Nickname
+			}
+			if name == "" {
+				name = c.Username
+			}
 
 			mu.Lock()
 			entries = append(entries, InsomniaEntry{
 				Username: c.Username, Name: name, Avatar: c.SmallHeadURL,
 				MyCalls: calls, Responded: resp,
-				ResponseRate: float64(resp) / float64(calls),
+				ResponseRate:      float64(resp) / float64(calls),
 				MedianResponseSec: median,
 			})
 			mu.Unlock()

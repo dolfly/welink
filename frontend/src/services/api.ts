@@ -10,7 +10,8 @@ import { emitToast } from '../components/common/Toast';
 
 // 配置 axios 实例
 const api = axios.create({
-  timeout: 120000, // 2 分钟（大群聊分析需要较长时间）
+  // 普通列表/查询不应卡住两分钟；重分析和导出在具体方法上单独放宽。
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   }
@@ -74,17 +75,21 @@ export const contactsApi = {
   /**
    * 获取指定联系人的词云数据
    */
-  getWordCloud: (username: string, includeMine = false) =>
+  getWordCloud: (username: string, includeMine = false, signal?: AbortSignal) =>
     api.get<void, WordCount[]>('/contacts/wordcloud', {
-      params: { username, ...(includeMine ? { include_mine: 'true' } : {}) }
+      params: { username, ...(includeMine ? { include_mine: 'true' } : {}) },
+      signal,
+      timeout: 120000,
     }),
 
   /**
    * 获取联系人深度分析数据
    */
-  getDetail: (username: string) =>
+  getDetail: (username: string, signal?: AbortSignal) =>
     api.get<void, ContactDetail>('/contacts/detail', {
-      params: { username }
+      params: { username },
+      signal,
+      timeout: 120000,
     }),
 
   /**
@@ -104,7 +109,10 @@ export const contactsApi = {
     }),
 
   exportMessages: (username: string, from?: number, to?: number) =>
-    api.get<void, import('../types').ChatMessage[]>('/contacts/export', { params: { username, ...(from ? { from } : {}), ...(to ? { to } : {}) } }),
+    api.get<void, import('../types').ChatMessage[]>('/contacts/export', {
+      params: { username, ...(from ? { from } : {}), ...(to ? { to } : {}) },
+      timeout: 120000,
+    }),
 
   /**
    * 获取某月的文本消息（情感分析详情）
@@ -117,16 +125,21 @@ export const contactsApi = {
   /**
    * 获取情感分析数据
    */
-  getSentiment: (username: string, includeMine = false) =>
+  getSentiment: (username: string, includeMine = false, signal?: AbortSignal) =>
     api.get<void, SentimentResult>('/contacts/sentiment', {
-      params: { username, ...(includeMine ? { include_mine: 'true' } : {}) }
+      params: { username, ...(includeMine ? { include_mine: 'true' } : {}) },
+      signal,
+      timeout: 120000,
     }),
 
   /**
    * 获取与联系人的共同群聊
    */
-  getCommonGroups: (username: string) =>
-    api.get<void, GroupInfo[]>('/contacts/common-groups', { params: { username } }),
+  getCommonGroups: (username: string, signal?: AbortSignal) =>
+    api.get<void, GroupInfo[]>('/contacts/common-groups', {
+      params: { username },
+      signal,
+    }),
 
   getCooling: () =>
     api.get<void, CoolingEntry[]>('/contacts/cooling'),
@@ -214,8 +227,10 @@ export const globalApi = {
   /**
    * 初始化/重新索引（传入时间范围）
    */
-  init: (from: number | null, to: number | null) =>
-    api.post<void, { status: string }>('/init', { from: from ?? 0, to: to ?? 0 }),
+  init: async (from: number | null, to: number | null) => {
+    invalidateGroupsListCache();
+    return api.post<void, { status: string }>('/init', { from: from ?? 0, to: to ?? 0 });
+  },
 
   /**
    * 取消正在进行的索引
@@ -286,12 +301,44 @@ export const statsApi = {
     }),
 };
 
-export const groupsApi = {
-  getList: () =>
-    api.get<void, GroupInfo[]>('/groups'),
+let groupsListCache: GroupInfo[] | null = null;
+let groupsListRequest: Promise<GroupInfo[]> | null = null;
+let groupsListGeneration = 0;
 
-  getDetail: (username: string) =>
-    api.get<void, GroupDetail>('/groups/detail', { params: { username } }),
+export function invalidateGroupsListCache() {
+  groupsListGeneration++;
+  groupsListCache = null;
+  groupsListRequest = null;
+}
+
+async function getGroupsList(force = false): Promise<GroupInfo[]> {
+  if (force) invalidateGroupsListCache();
+  if (groupsListCache) return groupsListCache;
+  if (groupsListRequest) return groupsListRequest;
+
+  const generation = groupsListGeneration;
+  const request = api.get<void, GroupInfo[]>('/groups')
+    .then((groups) => {
+      const result = groups ?? [];
+      if (groupsListGeneration === generation) groupsListCache = result;
+      return result;
+    })
+    .finally(() => {
+      if (groupsListRequest === request) groupsListRequest = null;
+    });
+  groupsListRequest = request;
+  return request;
+}
+
+export const groupsApi = {
+  getList: (force = false) => getGroupsList(force),
+
+  getDetail: (username: string, signal?: AbortSignal) =>
+    api.get<void, GroupDetail>('/groups/detail', {
+      params: { username },
+      signal,
+      timeout: 120000,
+    }),
 
   getDayMessages: (username: string, date: string) =>
     api.get<void, GroupChatMessage[]>('/groups/messages', { params: { username, date } }),
@@ -300,13 +347,22 @@ export const groupsApi = {
     api.get<void, GroupChatMessage[]>('/groups/search', { params: { username, q, ...(speaker ? { speaker } : {}) } }),
 
   exportMessages: (username: string, from?: number, to?: number) =>
-    api.get<void, GroupChatMessage[]>('/groups/export', { params: { username, ...(from ? { from } : {}), ...(to ? { to } : {}) } }),
+    api.get<void, GroupChatMessage[]>('/groups/export', {
+      params: { username, ...(from ? { from } : {}), ...(to ? { to } : {}) },
+      timeout: 120000,
+    }),
 
   getRelationships: (username: string) =>
-    api.get<void, import('../types').RelationshipGraph | null>('/groups/relationships', { params: { username } }),
+    api.get<void, import('../types').RelationshipGraph | null>('/groups/relationships', {
+      params: { username },
+      timeout: 120000,
+    }),
 
   getMemberDetail: (username: string, member: string) =>
-    api.get<void, import('../types').GroupMemberDetail>('/groups/member-detail', { params: { username, member } }),
+    api.get<void, import('../types').GroupMemberDetail>('/groups/member-detail', {
+      params: { username, member },
+      timeout: 120000,
+    }),
 };
 
 // 定时任务（主动总结/挖掘）

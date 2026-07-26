@@ -95,8 +95,8 @@ var negativeWords = []string{
 // intensifiers 程度副词
 var intensifiers = map[string]float64{
 	"非常": 1.6, "特别": 1.5, "超级": 1.5, "极其": 1.7, "十分": 1.4,
-	"太":   1.4, "真的": 1.3, "真":   1.2, "好":   1.2, "超":   1.4,
-	"相当": 1.3, "挺":   1.2, "蛮":   1.2, "很":   1.2, "极":   1.5,
+	"太": 1.4, "真的": 1.3, "真": 1.2, "好": 1.2, "超": 1.4,
+	"相当": 1.3, "挺": 1.2, "蛮": 1.2, "很": 1.2, "极": 1.5,
 	"格外": 1.3, "尤为": 1.3, "异常": 1.4,
 }
 
@@ -417,14 +417,35 @@ func (s *ContactService) GetSentimentAnalysis(username string, includeMine bool)
 		s.contactAnalysisMu.RUnlock()
 		return cached
 	}
+	generation := s.contactAnalysisGeneration
 	s.contactAnalysisMu.RUnlock()
-	store := func(result *SentimentResult) *SentimentResult {
-		s.contactAnalysisMu.Lock()
-		if s.sentimentCache == nil { s.sentimentCache = make(map[string]*SentimentResult) }
-		s.sentimentCache[cacheKey] = result
-		s.contactAnalysisMu.Unlock()
-		return result
-	}
+
+	value, _, _ := s.contactAnalysisFlights.Do(
+		fmt.Sprintf("sentiment:%d:%s", generation, cacheKey),
+		func() (interface{}, error) {
+			s.contactAnalysisMu.RLock()
+			if cached := s.sentimentCache[cacheKey]; cached != nil {
+				s.contactAnalysisMu.RUnlock()
+				return cached, nil
+			}
+			s.contactAnalysisMu.RUnlock()
+
+			result := s.computeSentimentAnalysis(username, includeMine)
+			s.contactAnalysisMu.Lock()
+			if s.contactAnalysisGeneration == generation {
+				if s.sentimentCache == nil {
+					s.sentimentCache = make(map[string]*SentimentResult)
+				}
+				storeBounded(s.sentimentCache, &s.sentimentCacheOrder, cacheKey, result, contactAnalysisCacheLimit)
+			}
+			s.contactAnalysisMu.Unlock()
+			return result, nil
+		},
+	)
+	return value.(*SentimentResult)
+}
+
+func (s *ContactService) computeSentimentAnalysis(username string, includeMine bool) *SentimentResult {
 
 	tableName := db.GetTableName(username)
 	tw := s.timeWhere()
@@ -499,13 +520,13 @@ func (s *ContactService) GetSentimentAnalysis(username string, includeMine bool)
 	}
 
 	if len(buckets) == 0 {
-		return store(&SentimentResult{
+		return &SentimentResult{
 			Monthly:  []SentimentPoint{},
 			Overall:  0.5,
 			Positive: 0,
 			Negative: 0,
 			Neutral:  0,
-		})
+		}
 	}
 
 	// 组装月度数据
@@ -539,13 +560,13 @@ func (s *ContactService) GetSentimentAnalysis(username string, includeMine bool)
 		overall = math2dp(totalScore / float64(totalScored))
 	}
 
-	return store(&SentimentResult{
+	return &SentimentResult{
 		Monthly:  points,
 		Overall:  overall,
 		Positive: totalPos,
 		Negative: totalNeg,
 		Neutral:  totalNeutral,
-	})
+	}
 }
 
 func math2dp(f float64) float64 {

@@ -3,7 +3,6 @@
  */
 
 import React from 'react';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 
 const TYPE_COLORS: Record<string, string> = {
   '文本': '#07c160',
@@ -50,38 +49,27 @@ export const MessageTypePieChart: React.FC<Props> = ({ typeData, totalMessages }
 
   if (data.length === 0) return null;
 
+  let accumulated = 0;
+  const gradient = data.map((entry) => {
+    const start = accumulated;
+    accumulated += entry.pct;
+    return `${TYPE_COLORS[entry.name] ?? '#d1d1d6'} ${start}% ${accumulated}%`;
+  }).join(', ');
+
   return (
     <div className="bg-[#f8f9fb] dk-subtle rounded-2xl p-4">
       <h4 className="text-sm font-black text-gray-500 dark:text-gray-400 uppercase mb-1 tracking-wider">消息类型分布</h4>
       <p className="text-xs text-gray-400 mb-3">各类型消息占比</p>
       {/* 饼图居中 + 图例右侧 */}
       <div className="flex items-center justify-center gap-4">
-        {/* 饼图 */}
-        <div className="flex-shrink-0" style={{ width: 120, height: 120 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={data}
-                cx="50%"
-                cy="50%"
-                innerRadius={30}
-                outerRadius={52}
-                dataKey="pct"
-                stroke="none"
-              >
-                {data.map((entry) => (
-                  <Cell key={entry.name} fill={TYPE_COLORS[entry.name] ?? '#d1d1d6'} />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{ borderRadius: 8, fontSize: 11, border: '1px solid #eee' }}
-                formatter={(v: number, name: string) => [
-                  `${v}%${totalMessages != null ? ` (${Math.round(v / 100 * totalMessages).toLocaleString()})` : ''}`,
-                  name,
-                ]}
-              />
-            </PieChart>
-          </ResponsiveContainer>
+        {/* CSS 甜甜圈无需加载整套图表库，详情图表仍按需加载。 */}
+        <div
+          className="relative flex h-[104px] w-[104px] flex-shrink-0 items-center justify-center rounded-full"
+          style={{ background: `conic-gradient(${gradient})` }}
+          role="img"
+          aria-label={data.map(entry => `${entry.name} ${entry.pct}%`).join('，')}
+        >
+          <div className="dk-subtle h-[60px] w-[60px] rounded-full bg-[#f8f9fb]" />
         </div>
         {/* 图例：name 占主位不截断，count + % 右侧紧凑显示 */}
         <div className="flex-1 min-w-0 space-y-1">
