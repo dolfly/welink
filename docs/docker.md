@@ -281,6 +281,63 @@ backend:
       max-file: "3"
 ```
 
+### 官网 / Demo 访问统计（GoAccess）
+
+生产用的 `server-compose.yml` 会把官网 Nginx 日志写到宿主机：
+
+```text
+/var/log/welink/nginx/access.log
+/var/log/welink/nginx/error.log
+```
+
+日志每行第一个字段是访问域名，例如 `welink.click` / `www.welink.click` / `demo.welink.click`，方便 GoAccess 按站点统计。
+
+生产 Nginx 暴露两份 GoAccess 报表，并强制 Basic Auth：
+
+```text
+https://welink.click/_stats/       # 官网访问统计
+https://demo.welink.click/_stats/  # Demo 访问统计
+```
+
+密码文件不提交到 Git。首次启用前，在服务器生成 `htpasswd`：
+
+```bash
+apt-get install -y apache2-utils
+htpasswd -c /opt/welink/deploy/nginx-auth/htpasswd <username>
+docker compose -f /opt/welink/server-compose.yml restart website
+```
+
+首次部署或更新后确认日志 / 报表目录存在：
+
+```bash
+mkdir -p /var/log/welink/nginx /var/log/welink/goaccess
+docker compose -f server-compose.yml up -d
+```
+
+实时查看终端报表：
+
+```bash
+docker run --rm -it \
+  -v /var/log/welink/nginx:/var/log/nginx:ro \
+  allinurl/goaccess /var/log/nginx/access.log \
+  --log-format='%v %h %^ %^ [%d:%t %^] "%r" %s %b "%R" "%u"' \
+  --date-format='%d/%b/%Y' \
+  --time-format='%H:%M:%S'
+```
+
+生成两份静态 HTML 报表：
+
+```bash
+/opt/welink/scripts/goaccess-report.sh
+```
+
+每 5 分钟自动刷新：
+
+```bash
+(crontab -l 2>/dev/null | grep -v 'goaccess-report.sh'; \
+  echo '*/5 * * * * /opt/welink/scripts/goaccess-report.sh >/var/log/welink/goaccess/cron.log 2>&1') | crontab -
+```
+
 ## 健康检查
 
 给 backend 加一个 `healthcheck`，让 Compose 自动重启异常容器：

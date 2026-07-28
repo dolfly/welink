@@ -12,6 +12,8 @@
 #
 # 前提：
 #   - 证书已在 /etc/letsencrypt/live/welink.click/{fullchain,privkey}.pem
+#   - Nginx 访问日志持久化在 /var/log/welink/nginx，供 GoAccess 统计
+#   - 如需访问 /_stats/，先在 deploy/nginx-auth/htpasswd 写入 Basic Auth 账号密码
 
 services:
   # ── 官网 nginx（welink.click + demo.welink.click 反向代理）────────────────
@@ -24,6 +26,11 @@ services:
     volumes:
       - /etc/letsencrypt/live/welink.click/fullchain.pem:/etc/certs/fullchain.pem:ro
       - /etc/letsencrypt/live/welink.click/privkey.pem:/etc/certs/privkey.pem:ro
+      - ./docs/nginx/default.conf:/etc/nginx/templates/default.conf:ro
+      - ./docs/nginx/http-only.conf:/etc/nginx/templates/http-only.conf:ro
+      - ./deploy/nginx-auth:/etc/nginx/auth:ro
+      - /var/log/welink/nginx:/var/log/nginx
+      - /var/log/welink/goaccess:/var/www/goaccess:ro
     restart: unless-stopped
     depends_on:
       - demo-frontend
