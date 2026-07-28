@@ -9,5 +9,6 @@ Example on the production server:
 ```bash
 apt-get install -y apache2-utils
 htpasswd -c /opt/welink/deploy/nginx-auth/htpasswd <username>
+chmod 644 /opt/welink/deploy/nginx-auth/htpasswd
 docker compose -f /opt/welink/server-compose.yml restart website
 ```

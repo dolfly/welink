@@ -304,6 +304,7 @@ https://demo.welink.click/_stats/  # Demo 访问统计
 ```bash
 apt-get install -y apache2-utils
 htpasswd -c /opt/welink/deploy/nginx-auth/htpasswd <username>
+chmod 644 /opt/welink/deploy/nginx-auth/htpasswd
 docker compose -f /opt/welink/server-compose.yml restart website
 ```
 
